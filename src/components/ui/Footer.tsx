@@ -38,10 +38,8 @@ export default function Footer() {
 
           {/* Brand */}
           <div>
-            <div className="flex items-baseline gap-1 mb-3">
-              <span className="text-white text-3xl font-light" style={{ fontFamily: 'Georgia, serif' }}>T</span>
-              <span className="text-white/90 text-sm font-light tracking-[4px]">AROS</span>
-              <span className="text-white/40 text-xs ml-2">Personalservice GmbH</span>
+            <div className="mb-4">
+              <img src="/images/logo.png" alt="Taros Personalservice" className="h-12 w-auto" />
             </div>
             <p className="text-white/60 text-sm leading-relaxed">
               {locale === 'de'
@@ -96,8 +94,11 @@ export default function Footer() {
               </li>
               <li>
                 <span className="block text-white/40 text-xs uppercase tracking-wider mb-0.5">Telefon</span>
-                <a href="tel:+4999228691234" className="hover:text-white transition-colors">
+                <a href="tel:+4999228691234" className="hover:text-white transition-colors block">
                   09922 / 869 1234
+                </a>
+                <a href="tel:+420601506010" className="hover:text-white transition-colors block">
+                  +420 601 506 010
                 </a>
               </li>
               <li>
