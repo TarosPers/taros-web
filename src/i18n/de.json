@@ -1,0 +1,107 @@
+{
+  "nav": {
+    "jobs": "Stellenangebote",
+    "forCompanies": "Für Unternehmen",
+    "about": "Über uns",
+    "contact": "Kontakt"
+  },
+  "hero": {
+    "badge": "Regen · Zwiesel · Klatovy · Domažlice",
+    "title": "Wir helfen Ihnen,",
+    "titleHighlight": "Arbeit in Deutschland zu finden",
+    "slogan": "Faire Bedingungen. Sicherheit.",
+    "sloganHighlight": "Persönlicher Ansatz.",
+    "feature1": "Geprüfte Angebote",
+    "feature2": "Deutscher Arbeitsvertrag",
+    "feature3": "Unterstützung auf jedem Schritt",
+    "btnJobs": "Stellen ansehen",
+    "btnCompany": "Ich bin Arbeitgeber"
+  },
+  "sectors": {
+    "production": "Produktion",
+    "productionDesc": "Industrie, Maschinenbau",
+    "logistics": "Logistik",
+    "logisticsDesc": "Lager, Transport",
+    "healthcare": "Pflege & Gesundheit",
+    "healthcareDesc": "Krankenpflege, Soziales",
+    "technical": "Technische Berufe",
+    "technicalDesc": "Elektro, IT, Handwerk"
+  },
+  "stats": {
+    "years": "Jahre auf dem Markt",
+    "response": "Reaktionszeit",
+    "legal": "legale Beschäftigung in DE"
+  },
+  "jobs": {
+    "title": "Aktuelle Stellenangebote",
+    "subtitle": "Online registrieren in 3 Minuten.",
+    "sectionLabel": "Stellenangebote",
+    "fulltime": "Vollzeit",
+    "parttime": "Teilzeit",
+    "temporary": "Zeitarbeit",
+    "apply": "Bewerben",
+    "noJobs": "Aktuell sind keine Stellen verfügbar.",
+    "salary": "Gehalt",
+    "location": "Ort",
+    "type": "Vertragsart",
+    "applyNow": "Jetzt bewerben",
+    "backToJobs": "Zurück zur Übersicht",
+    "shareOnFacebook": "Auf Facebook teilen",
+    "allJobs": "Alle Stellen anzeigen →"
+  },
+  "howItWorks": {
+    "sectionLabel": "So funktioniert es",
+    "title": "Von der Registrierung zur Anstellung",
+    "step1Title": "Formular ausfüllen",
+    "step1Desc": "Online-Registrierung in 3 Minuten, ohne Lebenslauf als PDF.",
+    "step2Title": "Wir melden uns",
+    "step2Desc": "Innerhalb von 48 Stunden kontaktiert Sie unser Spezialist.",
+    "step3Title": "Persönliches Gespräch",
+    "step3Desc": "Wir besprechen Ihre Möglichkeiten und Präferenzen.",
+    "step4Title": "Sie beginnen die Arbeit",
+    "step4Desc": "Wir erledigen alle Formalitäten für Sie."
+  },
+  "cta": {
+    "title": "Suchen Sie zuverlässige Mitarbeiter?",
+    "titleHighlight": "Schreiben Sie uns noch heute.",
+    "btnJobs": "Stellenangebote",
+    "btnCompany": "Für Unternehmen"
+  },
+  "contact": {
+    "sectionLabel": "Kontakt",
+    "title": "Schreiben oder anrufen",
+    "description": "Wir sind für Bewerber und Unternehmen da. Wir kommunizieren auf Tschechisch und Deutsch – ohne Sprachbarriere.",
+    "hours": "Mo–Do 7:30–16:30, Fr bis 13:30",
+    "formName": "Vorname",
+    "formSurname": "Nachname",
+    "formEmail": "Ihre E-Mail",
+    "formSubject": "Betreff",
+    "formMessage": "Nachricht",
+    "formNotRobot": "Ich bin kein Roboter",
+    "formGdpr": "Ich habe die",
+    "formGdprLink": "Datenschutzerklärung",
+    "formGdprSuffix": "gelesen und stimme zu.",
+    "formSubmit": "Nachricht senden",
+    "formSuccess": "Nachricht gesendet! Wir melden uns innerhalb von 48 Stunden.",
+    "formError": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+  },
+  "application": {
+    "title": "Bewerbung für die Stelle",
+    "firstName": "Vorname",
+    "lastName": "Nachname",
+    "email": "E-Mail",
+    "phone": "Telefon",
+    "message": "Nachricht (optional)",
+    "cv": "Lebenslauf (PDF, max. 5 MB)",
+    "gdpr": "Ich habe die",
+    "gdprLink": "Datenschutzerklärung",
+    "gdprSuffix": "gelesen und stimme zu.",
+    "submit": "Bewerbung absenden",
+    "success": "Bewerbung gesendet! Wir melden uns innerhalb von 48 Stunden.",
+    "error": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut."
+  },
+  "footer": {
+    "privacy": "Datenschutzerklärung",
+    "imprint": "Impressum"
+  }
+}

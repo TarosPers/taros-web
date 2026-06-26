@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium border-none cursor-pointer transition-colors;
+    background-color: #e07b0a;
+    color: #ffffff;
+  }
+  .btn-primary:hover {
+    background-color: #f5a030;
+  }
+  .btn-green {
+    @apply inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-normal cursor-pointer transition-colors;
+    background-color: #367131;
+    color: #ffffff;
+  }
+  .btn-green:hover {
+    background-color: #4a8c45;
+  }
+  .btn-outline {
+    @apply inline-flex items-center gap-2 px-6 py-3 bg-transparent rounded-lg text-sm cursor-pointer transition-colors border;
+    color: #383838;
+    border-color: rgba(56,56,56,0.3);
+  }
+  .btn-outline:hover {
+    background-color: rgba(56,56,56,0.05);
+  }
+  .section-label {
+    @apply text-xs font-medium tracking-widest uppercase mb-2;
+    color: #e07b0a;
+  }
+  .section-title {
+    @apply text-2xl font-normal tracking-tight mb-2;
+    color: #383838;
+  }
+  .job-card {
+    @apply bg-white border border-gray-200 rounded-xl p-4 cursor-pointer transition-colors;
+  }
+  .job-card:hover {
+    border-color: #367131;
+  }
+  .form-input {
+    @apply w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm;
+    outline: none;
+  }
+  .form-input:focus {
+    border-color: #367131;
+    box-shadow: 0 0 0 3px rgba(54,113,49,0.15);
+  }
+  .form-label {
+    @apply block text-xs text-gray-500 mb-1;
+  }
+
+}
+body {
+  color: #1a1a1a;
+}

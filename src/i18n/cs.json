@@ -1,0 +1,107 @@
+{
+  "nav": {
+    "jobs": "Volné pozice",
+    "forCompanies": "Pro firmy",
+    "about": "O nás",
+    "contact": "Kontakt"
+  },
+  "hero": {
+    "badge": "Regen · Zwiesel · Klatovy · Domažlice",
+    "title": "Pomáháme najít práci",
+    "titleHighlight": "v Německu",
+    "slogan": "Férové podmínky. Jistota.",
+    "sloganHighlight": "Osobní přístup.",
+    "feature1": "Prověřené nabídky",
+    "feature2": "Německá smlouva",
+    "feature3": "Podpora na každém kroku",
+    "btnJobs": "Zobrazit pozice",
+    "btnCompany": "Jsem firma"
+  },
+  "sectors": {
+    "production": "Výroba",
+    "productionDesc": "průmysl, strojírenství",
+    "logistics": "Logistika",
+    "logisticsDesc": "sklady, doprava",
+    "healthcare": "Péče a zdravotnictví",
+    "healthcareDesc": "ošetřovatelství, sociální péče",
+    "technical": "Technické profese",
+    "technicalDesc": "elektro, IT, řemesla"
+  },
+  "stats": {
+    "years": "let na trhu",
+    "response": "odezva na žádost",
+    "legal": "legální zaměstnání v DE"
+  },
+  "jobs": {
+    "title": "Aktuální nabídky práce",
+    "subtitle": "Registrujte se online za 3 minuty.",
+    "sectionLabel": "Volné pozice",
+    "fulltime": "Plný úvazek",
+    "parttime": "Zkrácený",
+    "temporary": "Dočasný",
+    "apply": "Reagovat",
+    "noJobs": "Momentálně nejsou žádné volné pozice.",
+    "salary": "Mzda",
+    "location": "Lokalita",
+    "type": "Typ úvazku",
+    "applyNow": "Reagovat nyní",
+    "backToJobs": "Zpět na přehled pozic",
+    "shareOnFacebook": "Sdílet na Facebooku",
+    "allJobs": "Zobrazit všechny pozice →"
+  },
+  "howItWorks": {
+    "sectionLabel": "Jak to funguje",
+    "title": "Od registrace k zaměstnání",
+    "step1Title": "Vyplníte formulář",
+    "step1Desc": "Online registrace za 3 minuty, bez životopisu v PDF.",
+    "step2Title": "Ozveme se vám",
+    "step2Desc": "Do 48 hodin vás kontaktuje náš specialista.",
+    "step3Title": "Osobní schůzka",
+    "step3Desc": "Probereme vaše možnosti a preference.",
+    "step4Title": "Nastoupíte do práce",
+    "step4Desc": "Veškeré formality vyřídíme za vás."
+  },
+  "cta": {
+    "title": "Hledáte vysněnou práci?",
+    "titleHighlight": "Napište nám ještě dnes.",
+    "btnJobs": "Volné pozice",
+    "btnCompany": "Pro firmy"
+  },
+  "contact": {
+    "sectionLabel": "Kontakt",
+    "title": "Napište nebo zavolejte",
+    "description": "Jsme tu pro uchazeče i firmy. Komunikujeme česky i německy – bez jazykové bariéry.",
+    "hours": "Po–Čt 7:30–16:30, Pá do 13:30",
+    "formName": "Jméno",
+    "formSurname": "Příjmení",
+    "formEmail": "Váš e-mail",
+    "formSubject": "Předmět",
+    "formMessage": "Zpráva",
+    "formNotRobot": "Nejsem robot",
+    "formGdpr": "Přečetl(a) jsem si",
+    "formGdprLink": "Zásady ochrany osobních údajů",
+    "formGdprSuffix": "a souhlasím.",
+    "formSubmit": "Odeslat zprávu",
+    "formSuccess": "Zpráva odeslána! Ozveme se vám do 48 hodin.",
+    "formError": "Něco se pokazilo. Zkuste to prosím znovu."
+  },
+  "application": {
+    "title": "Registrace na pozici",
+    "firstName": "Jméno",
+    "lastName": "Příjmení",
+    "email": "E-mail",
+    "phone": "Telefon",
+    "message": "Zpráva (volitelně)",
+    "cv": "Životopis (PDF, max 5 MB)",
+    "gdpr": "Přečetl(a) jsem si",
+    "gdprLink": "Zásady ochrany osobních údajů",
+    "gdprSuffix": "a souhlasím.",
+    "submit": "Odeslat přihlášku",
+    "success": "Přihláška odeslána! Ozveme se vám do 48 hodin.",
+    "error": "Něco se pokazilo. Zkuste to prosím znovu."
+  },
+  "footer": {
+    "privacy": "Zásady ochrany osobních údajů",
+    "imprint": "Impressum"
+  }
+}
