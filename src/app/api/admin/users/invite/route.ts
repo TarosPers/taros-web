@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
     data: { role, lang: lang ?? 'cs' },
+    redirectTo: 'https://www.taros-personal.cz/cs/auth/callback',
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
