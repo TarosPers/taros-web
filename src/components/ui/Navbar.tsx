@@ -10,6 +10,7 @@ export default function Navbar() {
   const locale = useLocale()
   const router = useRouter()
   const pathname = usePathname()
+  const prefix = locale === 'de' ? '/de' : ''
 
   const switchLocale = (newLocale: string) => {
     const segments = pathname.split('/').filter(Boolean)
@@ -27,7 +28,7 @@ export default function Navbar() {
   return (
     <nav className="border-b border-gray-100 bg-white sticky top-0 z-50">
       <div className="max-w-7xl mx-auto flex items-center justify-between px-8 py-2">
-        <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+        <Link href={prefix || '/'} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
           <Image
             src="/images/logo.png"
             alt="Taros Personalservice GmbH"
@@ -37,20 +38,20 @@ export default function Navbar() {
           />
         </Link>
         <div className="flex items-center gap-6">
-          <Link href="/jobs" className="text-sm transition-colors" style={{ color: '#6b7280', textDecoration: 'none' }}>
+          <Link href={`${prefix}/jobs`} className="text-sm transition-colors" style={{ color: '#6b7280', textDecoration: 'none' }}>
             {t('jobs')}
           </Link>
-          <Link href="/for-companies" className="text-sm transition-colors" style={{ color: '#6b7280', textDecoration: 'none' }}>
+          <Link href={`${prefix}/for-companies`} className="text-sm transition-colors" style={{ color: '#6b7280', textDecoration: 'none' }}>
             {t('forCompanies')}
           </Link>
-          <Link href="/about" className="text-sm transition-colors" style={{ color: '#6b7280', textDecoration: 'none' }}>
+          <Link href={`${prefix}/about`} className="text-sm transition-colors" style={{ color: '#6b7280', textDecoration: 'none' }}>
             {t('about')}
           </Link>
-          <Link href="/contact" className="text-sm transition-colors" style={{ color: '#6b7280', textDecoration: 'none' }}>
+          <Link href={`${prefix}/contact`} className="text-sm transition-colors" style={{ color: '#6b7280', textDecoration: 'none' }}>
             {t('contact')}
           </Link>
           <Link
-            href={locale === 'de' ? '/de/dotaznik' : '/dotaznik'}
+            href={`${prefix}/dotaznik`}
             className="text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
             style={{ background: '#2a4f2d', color: '#fff', textDecoration: 'none' }}
           >
