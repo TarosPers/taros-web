@@ -41,9 +41,9 @@ export default async function JobDetailPage({ params }: Props) {
   const description = locale === 'de' ? job.description_de : job.description_cs
 
   const typeLabels: Record<string, string> = {
-    fulltime:  locale === 'de' ? 'Vollzeit' : 'Plny uvazek',
-    parttime:  locale === 'de' ? 'Teilzeit' : 'Zkraceny uvazek',
-    temporary: locale === 'de' ? 'Zeitarbeit' : 'Docasny',
+    fulltime:  locale === 'de' ? 'Vollzeit' : 'Plný úvazek',
+    parttime:  locale === 'de' ? 'Teilzeit' : 'Zkracený úvazek',
+    temporary: locale === 'de' ? 'Zeitarbeit' : 'Dočasny',
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
