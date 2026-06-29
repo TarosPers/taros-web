@@ -11,6 +11,7 @@ const supabase = createClient(
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
+  const [isSuperadmin, setIsSuperadmin] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
 
@@ -18,6 +19,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session && !pathname.includes('/login')) {
         router.push('/admin/login')
+      }
+      if (session?.user?.user_metadata?.role === 'superadmin') {
+        setIsSuperadmin(true)
       }
       setLoading(false)
     })
@@ -41,10 +45,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   const navItems = [
-    { href: '/admin/jobs',       label: 'Inzeráty' },
-    { href: '/admin/applicants', label: 'Žadatelé' },
-    { href: "/admin/pages", label: "Stránky" },
-    { href: "/admin/questionnaires", label: "Dotazníky" },
+    { href: '/admin/jobs',            label: 'Inzeráty' },
+    { href: '/admin/applicants',      label: 'Žadatelé' },
+    { href: '/admin/pages',           label: 'Stránky' },
+    { href: '/admin/questionnaires',  label: 'Dotazníky' },
+    ...(isSuperadmin ? [{ href: '/admin/users', label: 'Uživatelé' }] : []),
   ]
 
   return (
@@ -54,7 +59,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center gap-8">
             <img src="/images/logo.png" alt="Taros" style={{ height: '32px', objectFit: 'contain' }} />
             <span className="text-xs font-medium px-2 py-1 rounded" style={{ background: '#f2f8f1', color: '#2a4f2d' }}>
-              Admin
+              {isSuperadmin ? 'Superadmin' : 'Admin'}
             </span>
             <div className="flex items-center gap-6">
               {navItems.map(({ href, label }) => (
