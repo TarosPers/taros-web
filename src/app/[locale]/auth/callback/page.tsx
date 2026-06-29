@@ -14,10 +14,13 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        router.push('/admin/jobs')
-      }
-      if (event === 'PASSWORD_RECOVERY') {
-        router.push('/admin/login')
+        // Pokud jde o pozvánku, přesměruj na nastavení hesla
+        const hash = window.location.hash
+        if (hash.includes('type=invite')) {
+          router.push('/cs/auth/set-password')
+        } else {
+          router.push('/admin/jobs')
+        }
       }
     })
   }, [])
