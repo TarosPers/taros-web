@@ -11,7 +11,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params
   return {
-    title: locale === 'de' ? 'Stellenangebote | Taros Personalservice' : 'Volne pozice | Taros Personalservice',
+    title: locale === 'de' ? 'Stellenangebote | Taros Personalservice' : 'Volné pozice | Taros Personalservice',
   }
 }
 
@@ -24,81 +24,47 @@ export default async function JobsPage() {
     .eq('active', true)
     .order('created_at', { ascending: false })
 
-  const sectors = [
-    { key: 'production',  cs: 'Vyroba',              de: 'Produktion', icon: '⚙️' },
-    { key: 'logistics',   cs: 'Logistika',            de: 'Logistik',   icon: '🚚' },
-    { key: 'healthcare',  cs: 'Pece a zdravotnictvi', de: 'Pflege',     icon: '🏥' },
-    { key: 'technical',   cs: 'Technicke profese',    de: 'Technik',    icon: '🔧' },
-    { key: 'other',       cs: 'Ostatni',              de: 'Sonstige',   icon: '📋' },
-  ]
-
   const allJobs = jobs ?? []
-  const withSector = allJobs.filter(j => sectors.find(s => s.key === j.sector))
-  const withoutSector = allJobs.filter(j => !sectors.find(s => s.key === j.sector))
 
   return (
     <>
       <Navbar />
       <main className="max-w-7xl mx-auto">
-        <div className="px-8 py-8" style={{ background: '#2a4f2d' }}>
-          <h1 className="text-2xl font-bold text-white">
-            {locale === 'de' ? 'Aktuelle Stellenangebote' : 'Aktualni nabidky prace'}
+
+        {/* Banner */}
+        <div className="w-full border-b border-gray-200">
+          <img
+            src={locale === 'de' ? '/images/hero-de.jpg' : '/images/hero-cs.jpg'}
+            alt="Taros Personalservice"
+            className="w-full h-auto block"
+          />
+        </div>
+<br></br>
+        {/* Nadpis */}
+        <div className="px-8 pt-8 pb-6">
+          <h1 className="text-2xl font-bold" style={{ color: '#1a1a1a' }}>
+            {locale === 'de' ? 'Aktuelle Stellenangebote' : 'Aktuální nabídky práce'}
           </h1>
-          <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.7)' }}>
-            {locale === 'de'
-              ? `${allJobs.length} Stellen verfugbar`
-              : `${allJobs.length} pozic k dispozici`}
-          </p>
+          
         </div>
 
+        {/* Seznam pozic */}
         <div className="px-8 py-10">
           {allJobs.length === 0 ? (
             <div className="text-center py-16">
-              <p className="text-sm" style={{ color: '#9ca3af' }}>
-                {locale === 'de' ? 'Keine Stellen verfugbar' : 'Momentalne nejsou zadne volne pozice.'}
+              <p className="text-sm text-gray-400">
+                {locale === 'de' ? 'Keine Stellen verfügbar' : 'Momentálně nejsou žádné volné pozice.'}
               </p>
             </div>
           ) : (
-            <>
-              {sectors.map(({ key, cs, de, icon }) => {
-                const sectorJobs = allJobs.filter(j => j.sector === key)
-                if (sectorJobs.length === 0) return null
-                return (
-                  <div key={key} className="mb-10">
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className="text-xl">{icon}</span>
-                      <h2 className="text-lg font-medium" style={{ color: '#2a4f2d' }}>
-                        {locale === 'de' ? de : cs}
-                      </h2>
-                      <span className="text-xs ml-1" style={{ color: '#9ca3af' }}>({sectorJobs.length})</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      {sectorJobs.map((job) => (
-                        <JobCard key={job.id} job={job} />
-                      ))}
-                    </div>
-                  </div>
-                )
-              })}
-
-              {withoutSector.length > 0 && (
-                <div className="mb-10">
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="text-xl">📋</span>
-                    <h2 className="text-lg font-medium" style={{ color: '#2a4f2d' }}>
-                      {locale === 'de' ? 'Weitere Stellen' : 'Dalsi pozice'}
-                    </h2>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    {withoutSector.map((job) => (
-                      <JobCard key={job.id} job={job} />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
+            <div className="grid grid-cols-2 gap-4">
+              {allJobs.map((job) => (
+                <JobCard key={job.id} job={job} />
+              ))}
+            </div>
           )}
         </div>
+
       </main>
     </>
   )
