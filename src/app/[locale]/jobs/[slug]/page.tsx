@@ -96,7 +96,7 @@ export default async function JobDetailPage({ params }: Props) {
             <div className="rounded-xl overflow-hidden border border-gray-100">
               {job.og_image_url ? (
                 <img
-                  src={job.og_image_url}
+                  src={locale === 'de' && job.og_image_url_de ? job.og_image_url_de : job.og_image_url}
                   alt={title}
                   className="w-full h-auto block"
                 />
