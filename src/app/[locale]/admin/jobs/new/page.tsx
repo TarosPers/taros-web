@@ -20,6 +20,8 @@ export default function NewJobPage() {
   const [saving, setSaving] = useState(false)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [imageFileDe, setImageFileDe] = useState<File | null>(null)
+  const [imagePreviewDe, setImagePreviewDe] = useState<string | null>(null)
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['fulltime'])
   const [form, setForm] = useState({
     title_cs: '', title_de: '',
@@ -38,6 +40,13 @@ export default function NewJobPage() {
     if (!file) return
     setImageFile(file)
     setImagePreview(URL.createObjectURL(file))
+  }
+
+  const handleImageDe = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImageFileDe(file)
+    setImagePreviewDe(URL.createObjectURL(file))
   }
 
   const toggleType = (value: string) => {
@@ -68,6 +77,7 @@ export default function NewJobPage() {
     setSaving(true)
 
     let og_image_url = null
+    let og_image_url_de = null
 
     if (imageFile) {
       const filename = `jobs/${Date.now()}-${imageFile.name}`
@@ -80,12 +90,24 @@ export default function NewJobPage() {
       }
     }
 
+    if (imageFileDe) {
+      const filename = `jobs/${Date.now()}-de-${imageFileDe.name}`
+      const { error: uploadError } = await supabase.storage
+        .from('job-images')
+        .upload(filename, imageFileDe, { contentType: imageFileDe.type })
+      if (!uploadError) {
+        const { data } = supabase.storage.from('job-images').getPublicUrl(filename)
+        og_image_url_de = data.publicUrl
+      }
+    }
+
     const slug = generateSlug(form.title_cs)
     const { error } = await supabase.from('jobs').insert({
       ...form,
       slug,
       type: selectedTypes.join(','),
       og_image_url,
+      og_image_url_de,
     })
 
     if (error) {
@@ -149,13 +171,26 @@ export default function NewJobPage() {
 
         <div className="bg-white rounded-xl border border-gray-100 p-6">
           <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>Fotografie & Mapa</h2>
-          <div className="mb-4">
-            <label className="form-label">Fotografie pozice (JPG/PNG, doporučeno 940×788px)</label>
-            {imagePreview && (
-              <img src={imagePreview} alt="Náhled" className="mb-3 rounded-lg border border-gray-100 w-full" style={{ maxHeight: '200px', objectFit: 'contain', background: '#f9fafb' }} />
-            )}
-            <input type="file" accept="image/*" onChange={handleImage} className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:cursor-pointer file:bg-green-50 file:text-green-700" />
+
+          <div className="grid grid-cols-2 gap-6 mb-4">
+            <div>
+              <label className="form-label">Fotografie – česká verze (CS)</label>
+              <p className="text-xs text-gray-400 mb-2">Doporučeno 940×788px</p>
+              {imagePreview && (
+                <img src={imagePreview} alt="Náhled CS" className="mb-3 rounded-lg border border-gray-100 w-full" style={{ maxHeight: '160px', objectFit: 'contain', background: '#f9fafb' }} />
+              )}
+              <input type="file" accept="image/*" onChange={handleImage} className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:cursor-pointer file:bg-green-50 file:text-green-700" />
+            </div>
+            <div>
+              <label className="form-label">Fotografie – německá verze (DE)</label>
+              <p className="text-xs text-gray-400 mb-2">Pokud není vyplněno, použije se CS obrázek</p>
+              {imagePreviewDe && (
+                <img src={imagePreviewDe} alt="Náhled DE" className="mb-3 rounded-lg border border-gray-100 w-full" style={{ maxHeight: '160px', objectFit: 'contain', background: '#f9fafb' }} />
+              )}
+              <input type="file" accept="image/*" onChange={handleImageDe} className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:cursor-pointer file:bg-green-50 file:text-green-700" />
+            </div>
           </div>
+
           <div>
             <label className="form-label">Odkaz na mapu (Google Maps URL)</label>
             <input name="maps_url" value={form.maps_url} onChange={handleChange} className="form-input" placeholder="https://maps.google.com/?q=Regen,DE" />

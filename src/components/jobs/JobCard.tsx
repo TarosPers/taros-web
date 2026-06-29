@@ -12,6 +12,7 @@ interface Job {
   type: string
   active: boolean
   og_image_url: string | null
+  og_image_url_de: string | null
 }
 
 const TAG_STYLES: Record<string, { bg: string; color: string; label: string; labelDe: string }> = {
@@ -23,6 +24,7 @@ const TAG_STYLES: Record<string, { bg: string; color: string; label: string; lab
 export default function JobCard({ job }: { job: Job }) {
   const locale = useLocale()
   const title = locale === 'de' ? job.title_de : job.title_cs
+  const imageUrl = (locale === 'de' && job.og_image_url_de) ? job.og_image_url_de : job.og_image_url
   const tag = TAG_STYLES[job.type] ?? TAG_STYLES.fulltime
   const tagLabel = locale === 'de' ? tag.labelDe : tag.label
 
@@ -34,9 +36,9 @@ export default function JobCard({ job }: { job: Job }) {
     >
       {/* Obrázek vlevo - 50% */}
       <div className="flex-shrink-0 overflow-hidden" style={{ width: '50%' }}>
-        {job.og_image_url ? (
+        {imageUrl ? (
           <img
-            src={job.og_image_url}
+            src={imageUrl}
             alt={title}
             className="w-full h-full transition-transform duration-300 group-hover:scale-105"
             style={{ objectFit: 'cover', background: '#f9fafb' }}
