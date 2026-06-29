@@ -12,11 +12,12 @@ export default function AuthCallbackPage() {
   const router = useRouter()
 
   useEffect(() => {
+    const hash = window.location.hash
+    const isInvite = hash.includes('type=invite')
+
     supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        // Pokud jde o pozvánku, přesměruj na nastavení hesla
-        const hash = window.location.hash
-        if (hash.includes('type=invite')) {
+        if (isInvite) {
           router.push('/cs/auth/set-password')
         } else {
           router.push('/admin/jobs')
