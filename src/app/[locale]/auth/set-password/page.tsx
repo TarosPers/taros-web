@@ -74,7 +74,7 @@ export default function SetPasswordPage() {
       setError(tr.errorGeneral + error.message)
       setSaving(false)
     } else {
-      router.push('/admin/jobs')
+      window.location.href = '/admin/jobs'
     }
   }
 
