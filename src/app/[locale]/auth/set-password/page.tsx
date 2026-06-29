@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
 
@@ -8,23 +8,62 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+const t = {
+  cs: {
+    title: 'Nastavte heslo',
+    subtitle: 'Zvolte heslo pro přístup do administrace',
+    password: 'Heslo',
+    confirm: 'Potvrdit heslo',
+    placeholder: 'Minimálně 8 znaků',
+    placeholderConfirm: 'Zopakujte heslo',
+    save: 'Uložit heslo a přihlásit se',
+    saving: 'Ukládám...',
+    errorLength: 'Heslo musí mít alespoň 8 znaků',
+    errorMatch: 'Hesla se neshodují',
+    errorGeneral: 'Chyba: ',
+  },
+  de: {
+    title: 'Passwort festlegen',
+    subtitle: 'Wählen Sie ein Passwort für den Zugang zur Administration',
+    password: 'Passwort',
+    confirm: 'Passwort bestätigen',
+    placeholder: 'Mindestens 8 Zeichen',
+    placeholderConfirm: 'Passwort wiederholen',
+    save: 'Passwort speichern und anmelden',
+    saving: 'Speichere...',
+    errorLength: 'Das Passwort muss mindestens 8 Zeichen lang sein',
+    errorMatch: 'Die Passwörter stimmen nicht überein',
+    errorGeneral: 'Fehler: ',
+  },
+}
+
 export default function SetPasswordPage() {
   const router = useRouter()
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [lang, setLang] = useState<'cs' | 'de'>('cs')
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      const userLang = user?.user_metadata?.lang ?? 'cs'
+      setLang(userLang as 'cs' | 'de')
+    })
+  }, [])
+
+  const tr = t[lang]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
     if (password.length < 8) {
-      setError('Heslo musí mít alespoň 8 znaků')
+      setError(tr.errorLength)
       return
     }
     if (password !== confirm) {
-      setError('Hesla se neshodují')
+      setError(tr.errorMatch)
       return
     }
 
@@ -32,7 +71,7 @@ export default function SetPasswordPage() {
     const { error } = await supabase.auth.updateUser({ password })
 
     if (error) {
-      setError('Chyba: ' + error.message)
+      setError(tr.errorGeneral + error.message)
       setSaving(false)
     } else {
       router.push('/admin/jobs')
@@ -45,29 +84,29 @@ export default function SetPasswordPage() {
         <div className="flex justify-center mb-8">
           <img src="/images/logo.png" alt="Taros" style={{ height: '48px', objectFit: 'contain' }} />
         </div>
-        <h1 className="text-xl font-medium text-center mb-1" style={{ color: '#1a1a1a' }}>Nastavte heslo</h1>
-        <p className="text-sm text-gray-400 text-center mb-8">Zvolte heslo pro přístup do administrace</p>
+        <h1 className="text-xl font-medium text-center mb-1" style={{ color: '#1a1a1a' }}>{tr.title}</h1>
+        <p className="text-sm text-gray-400 text-center mb-8">{tr.subtitle}</p>
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-xs text-gray-500 mb-1">Heslo</label>
+            <label className="block text-xs text-gray-500 mb-1">{tr.password}</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="form-input"
-              placeholder="Minimálně 8 znaků"
+              placeholder={tr.placeholder}
               required
             />
           </div>
           <div className="mb-6">
-            <label className="block text-xs text-gray-500 mb-1">Potvrdit heslo</label>
+            <label className="block text-xs text-gray-500 mb-1">{tr.confirm}</label>
             <input
               type="password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               className="form-input"
-              placeholder="Zopakujte heslo"
+              placeholder={tr.placeholderConfirm}
               required
             />
           </div>
@@ -82,7 +121,7 @@ export default function SetPasswordPage() {
             className="w-full py-3 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-60"
             style={{ background: '#2a4f2d' }}
           >
-            {saving ? 'Ukládám...' : 'Uložit heslo a přihlásit se'}
+            {saving ? tr.saving : tr.save}
           </button>
         </form>
       </div>

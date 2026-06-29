@@ -18,7 +18,7 @@ export default function AuthCallbackPage() {
     supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
         if (isInvite) {
-          router.push('/cs/auth/set-password')
+          router.push('/auth/set-password')
         } else {
           router.push('/admin/jobs')
         }
