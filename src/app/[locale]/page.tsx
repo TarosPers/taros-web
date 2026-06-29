@@ -40,7 +40,6 @@ export default async function HomePage() {
         <CtaBand />
         <ContactSection />
       </main>
-      <PageFooter />
     </>
   )
 }
@@ -171,31 +170,5 @@ function ContactSection() {
         <ContactForm />
       </div>
     </section>
-  )
-}
-
-function PageFooter() {
-  const t = useTranslations('footer')
-  return (
-    <footer style={{ background: '#1e3d21' }}>
-      <div className="max-w-7xl mx-auto px-8 py-5 flex items-center justify-between">
-        <img
-          src="/images/logo.png"
-          alt="Taros Personalservice GmbH"
-          style={{ height: '36px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
-        />
-        <span className="text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}>
-          {'© 2025 Taros Personalservice GmbH'}
-        </span>
-        <div className="flex gap-4 text-xs">
-          <a href="/privacy" className="transition-colors" style={{ color: 'rgba(255,255,255,0.5)' }}>
-            {t('privacy')}
-          </a>
-          <a href="/imprint" className="transition-colors" style={{ color: 'rgba(255,255,255,0.5)' }}>
-            {t('imprint')}
-          </a>
-        </div>
-      </div>
-    </footer>
   )
 }

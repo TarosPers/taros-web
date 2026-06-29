@@ -39,13 +39,19 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <div className="mb-4">
-              <img src="/images/logo.png" alt="Taros Personalservice" className="h-12 w-auto" />
+              <img
+                src="/images/logo.png"
+                alt="Taros Personalservice"
+                className="h-12 w-auto"
+                style={{ filter: 'brightness(0) invert(1)' }}
+              />
             </div>
             <p className="text-white/60 text-sm leading-relaxed">
               {locale === 'de'
-                ? 'Ihr verlässlicher Partner für Arbeitsvermittlung zwischen Tschechien und Deutschland.'
-                : 'Váš spolehlivý partner pro zprostředkování práce mezi Českou republikou a Německem.'}
+                ? 'Ihr verlässlicher Partner für Arbeitsvermittlung.'
+                : 'Váš spolehlivý partner pro zprostředkování práce.'}
             </p>
+            <br></br>
             {/* Facebook */}
             <a
               href="https://www.facebook.com/tarospracevnemecku/"
@@ -116,7 +122,7 @@ export default function Footer() {
           <span>© {new Date().getFullYear()} Taros Personalservice GmbH. {locale === 'de' ? 'Alle Rechte vorbehalten.' : 'Všechna práva vyhrazena.'}</span>
           <div className="flex gap-4">
             <Link href={`${prefix}/imprint`} className="hover:text-white/60 transition-colors">
-              {locale === 'de' ? 'Impressum' : 'Impressum'}
+              Impressum
             </Link>
             <Link href={`${prefix}/privacy`} className="hover:text-white/60 transition-colors">
               {locale === 'de' ? 'Datenschutz' : 'Ochrana údajů'}
