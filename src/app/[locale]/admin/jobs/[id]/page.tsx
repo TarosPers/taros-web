@@ -23,6 +23,8 @@ export default function EditJobPage({ params }: { params: { id: string } }) {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [imageFileDe, setImageFileDe] = useState<File | null>(null)
   const [imagePreviewDe, setImagePreviewDe] = useState<string | null>(null)
+  const [imageFileFb, setImageFileFb] = useState<File | null>(null)
+  const [imagePreviewFb, setImagePreviewFb] = useState<string | null>(null)
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['fulltime'])
   const [form, setForm] = useState({
     title_cs: '', title_de: '',
@@ -31,6 +33,7 @@ export default function EditJobPage({ params }: { params: { id: string } }) {
     sector: 'other', active: true, maps_url: '',
     og_image_url: '',
     og_image_url_de: '',
+    og_image_fb_url: '',
   })
 
   useEffect(() => {
@@ -39,6 +42,7 @@ export default function EditJobPage({ params }: { params: { id: string } }) {
         setForm(data)
         if (data.og_image_url) setImagePreview(data.og_image_url)
         if (data.og_image_url_de) setImagePreviewDe(data.og_image_url_de)
+        if (data.og_image_fb_url) setImagePreviewFb(data.og_image_fb_url)
         if (data.type) {
           setSelectedTypes(data.type.split(',').map((t: string) => t.trim()))
         }
@@ -66,10 +70,27 @@ export default function EditJobPage({ params }: { params: { id: string } }) {
     setImagePreviewDe(URL.createObjectURL(file))
   }
 
+  const handleImageFb = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImageFileFb(file)
+    setImagePreviewFb(URL.createObjectURL(file))
+  }
+
   const toggleType = (value: string) => {
     setSelectedTypes(prev =>
       prev.includes(value) ? prev.filter(t => t !== value) : [...prev, value]
     )
+  }
+
+  const uploadImage = async (file: File, prefix: string) => {
+    const filename = `jobs/${Date.now()}-${prefix}-${file.name}`
+    const { error } = await supabase.storage
+      .from('job-images')
+      .upload(filename, file, { contentType: file.type })
+    if (error) return null
+    const { data } = supabase.storage.from('job-images').getPublicUrl(filename)
+    return data.publicUrl
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,34 +103,18 @@ export default function EditJobPage({ params }: { params: { id: string } }) {
 
     let og_image_url = form.og_image_url
     let og_image_url_de = form.og_image_url_de
+    let og_image_fb_url = form.og_image_fb_url
 
-    if (imageFile) {
-      const filename = `jobs/${Date.now()}-${imageFile.name}`
-      const { error: uploadError } = await supabase.storage
-        .from('job-images')
-        .upload(filename, imageFile, { contentType: imageFile.type })
-      if (!uploadError) {
-        const { data } = supabase.storage.from('job-images').getPublicUrl(filename)
-        og_image_url = data.publicUrl
-      }
-    }
-
-    if (imageFileDe) {
-      const filename = `jobs/${Date.now()}-de-${imageFileDe.name}`
-      const { error: uploadError } = await supabase.storage
-        .from('job-images')
-        .upload(filename, imageFileDe, { contentType: imageFileDe.type })
-      if (!uploadError) {
-        const { data } = supabase.storage.from('job-images').getPublicUrl(filename)
-        og_image_url_de = data.publicUrl
-      }
-    }
+    if (imageFile) og_image_url = await uploadImage(imageFile, 'cs') ?? og_image_url
+    if (imageFileDe) og_image_url_de = await uploadImage(imageFileDe, 'de') ?? og_image_url_de
+    if (imageFileFb) og_image_fb_url = await uploadImage(imageFileFb, 'fb') ?? og_image_fb_url
 
     const { error } = await supabase.from('jobs').update({
       ...form,
       type: selectedTypes.join(','),
       og_image_url,
       og_image_url_de,
+      og_image_fb_url,
     }).eq('id', params.id)
 
     if (error) {
@@ -193,6 +198,15 @@ export default function EditJobPage({ params }: { params: { id: string } }) {
               )}
               <input type="file" accept="image/*" onChange={handleImageDe} className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:cursor-pointer file:bg-green-50 file:text-green-700" />
             </div>
+          </div>
+
+          <div className="mb-4">
+            <label className="form-label">Fotografie pro Facebook / sdílení (1200×630px)</label>
+            <p className="text-xs text-gray-400 mb-2">Optimální rozměr pro sdílení na sociálních sítích. Pokud není vyplněno, použije se CS obrázek.</p>
+            {imagePreviewFb && (
+              <img src={imagePreviewFb} alt="Náhled FB" className="mb-3 rounded-lg border border-gray-100 w-full" style={{ maxHeight: '160px', objectFit: 'contain', background: '#f9fafb' }} />
+            )}
+            <input type="file" accept="image/*" onChange={handleImageFb} className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:cursor-pointer file:bg-green-50 file:text-green-700" />
           </div>
 
           <div>

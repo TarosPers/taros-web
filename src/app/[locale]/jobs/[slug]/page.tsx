@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: locale === 'de' ? job.description_de?.slice(0, 160) : job.description_cs?.slice(0, 160),
     openGraph: {
       title: `${title} – ${job.location}`,
-      images: job.og_image_url ? [job.og_image_url] : ['/images/hero-cs.jpg'],
+      images: job.og_image_fb_url ? [job.og_image_fb_url] : job.og_image_url ? [job.og_image_url] : ['/images/hero-cs.jpg'],
     },
   }
 }

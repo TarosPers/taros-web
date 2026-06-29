@@ -22,6 +22,8 @@ export default function NewJobPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [imageFileDe, setImageFileDe] = useState<File | null>(null)
   const [imagePreviewDe, setImagePreviewDe] = useState<string | null>(null)
+  const [imageFileFb, setImageFileFb] = useState<File | null>(null)
+  const [imagePreviewFb, setImagePreviewFb] = useState<string | null>(null)
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['fulltime'])
   const [form, setForm] = useState({
     title_cs: '', title_de: '',
@@ -49,6 +51,13 @@ export default function NewJobPage() {
     setImagePreviewDe(URL.createObjectURL(file))
   }
 
+  const handleImageFb = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImageFileFb(file)
+    setImagePreviewFb(URL.createObjectURL(file))
+  }
+
   const toggleType = (value: string) => {
     setSelectedTypes(prev =>
       prev.includes(value) ? prev.filter(t => t !== value) : [...prev, value]
@@ -68,6 +77,16 @@ export default function NewJobPage() {
       + '-' + Date.now()
   }
 
+  const uploadImage = async (file: File, prefix: string) => {
+    const filename = `jobs/${Date.now()}-${prefix}-${file.name}`
+    const { error } = await supabase.storage
+      .from('job-images')
+      .upload(filename, file, { contentType: file.type })
+    if (error) return null
+    const { data } = supabase.storage.from('job-images').getPublicUrl(filename)
+    return data.publicUrl
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (selectedTypes.length === 0) {
@@ -76,30 +95,9 @@ export default function NewJobPage() {
     }
     setSaving(true)
 
-    let og_image_url = null
-    let og_image_url_de = null
-
-    if (imageFile) {
-      const filename = `jobs/${Date.now()}-${imageFile.name}`
-      const { error: uploadError } = await supabase.storage
-        .from('job-images')
-        .upload(filename, imageFile, { contentType: imageFile.type })
-      if (!uploadError) {
-        const { data } = supabase.storage.from('job-images').getPublicUrl(filename)
-        og_image_url = data.publicUrl
-      }
-    }
-
-    if (imageFileDe) {
-      const filename = `jobs/${Date.now()}-de-${imageFileDe.name}`
-      const { error: uploadError } = await supabase.storage
-        .from('job-images')
-        .upload(filename, imageFileDe, { contentType: imageFileDe.type })
-      if (!uploadError) {
-        const { data } = supabase.storage.from('job-images').getPublicUrl(filename)
-        og_image_url_de = data.publicUrl
-      }
-    }
+    const og_image_url = imageFile ? await uploadImage(imageFile, 'cs') : null
+    const og_image_url_de = imageFileDe ? await uploadImage(imageFileDe, 'de') : null
+    const og_image_fb_url = imageFileFb ? await uploadImage(imageFileFb, 'fb') : null
 
     const slug = generateSlug(form.title_cs)
     const { error } = await supabase.from('jobs').insert({
@@ -108,6 +106,7 @@ export default function NewJobPage() {
       type: selectedTypes.join(','),
       og_image_url,
       og_image_url_de,
+      og_image_fb_url,
     })
 
     if (error) {
@@ -189,6 +188,15 @@ export default function NewJobPage() {
               )}
               <input type="file" accept="image/*" onChange={handleImageDe} className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:cursor-pointer file:bg-green-50 file:text-green-700" />
             </div>
+          </div>
+
+          <div className="mb-4">
+            <label className="form-label">Fotografie pro Facebook / sdílení (1200×630px)</label>
+            <p className="text-xs text-gray-400 mb-2">Optimální rozměr pro sdílení na sociálních sítích. Pokud není vyplněno, použije se CS obrázek.</p>
+            {imagePreviewFb && (
+              <img src={imagePreviewFb} alt="Náhled FB" className="mb-3 rounded-lg border border-gray-100 w-full" style={{ maxHeight: '160px', objectFit: 'contain', background: '#f9fafb' }} />
+            )}
+            <input type="file" accept="image/*" onChange={handleImageFb} className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:cursor-pointer file:bg-green-50 file:text-green-700" />
           </div>
 
           <div>
