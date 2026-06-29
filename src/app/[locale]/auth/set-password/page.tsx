@@ -1,7 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { useRouter } from 'next/navigation'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -38,7 +37,6 @@ const t = {
 }
 
 export default function SetPasswordPage() {
-  const router = useRouter()
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
@@ -74,6 +72,8 @@ export default function SetPasswordPage() {
       setError(tr.errorGeneral + error.message)
       setSaving(false)
     } else {
+      // Počkej na session a pak přesměruj
+      await supabase.auth.getSession()
       window.location.href = '/admin/jobs'
     }
   }
