@@ -155,12 +155,7 @@ export default async function JobDetailPage({ params }: Props) {
         </div>
 
         <div className="px-8 py-8 border-t border-gray-100">
-          <h2 className="text-lg font-medium mb-1" style={{ color: '#1a1a1a' }}>
-            {locale === 'de' ? 'Jetzt bewerben' : 'Zazadat hned'}
-          </h2>
-          <p className="text-xs mb-6" style={{ color: '#9ca3af' }}>
-            {locale === 'de' ? 'Wir melden uns innerhalb von 48 Stunden.' : 'Ozveme se do 48 hodin.'}
-          </p>
+          
           <JobApplicationForm
             jobId={job.id}
             jobTitle={title}
