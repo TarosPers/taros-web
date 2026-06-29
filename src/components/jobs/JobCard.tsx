@@ -30,16 +30,16 @@ export default function JobCard({ job }: { job: Job }) {
     <Link
       href={`/jobs/${job.slug}`}
       className="flex bg-white border border-gray-100 rounded-xl overflow-hidden hover:border-gray-300 hover:shadow-sm transition-all no-underline group"
-      style={{ textDecoration: 'none', minHeight: '120px' }}
+      style={{ textDecoration: 'none', minHeight: '180px' }}
     >
-      {/* Miniatura vlevo */}
-      <div className="flex-shrink-0 overflow-hidden" style={{ width: '160px' }}>
+      {/* Obrázek vlevo - 50% */}
+      <div className="flex-shrink-0 overflow-hidden" style={{ width: '50%' }}>
         {job.og_image_url ? (
           <img
             src={job.og_image_url}
             alt={title}
             className="w-full h-full transition-transform duration-300 group-hover:scale-105"
-            style={{ objectFit: 'contain', background: '#f9fafb' }}
+            style={{ objectFit: 'cover', background: '#f9fafb' }}
           />
         ) : (
           <div
@@ -54,24 +54,24 @@ export default function JobCard({ job }: { job: Job }) {
         )}
       </div>
 
-      {/* Obsah vpravo */}
-      <div className="flex flex-col justify-between p-4 flex-1">
+      {/* Obsah vpravo - 50% */}
+      <div className="flex flex-col justify-between p-5" style={{ width: '50%' }}>
         <div>
           <span
-            className="inline-block text-xs px-2.5 py-0.5 rounded-full mb-2 font-medium"
+            className="inline-block text-xs px-2.5 py-0.5 rounded-full mb-3 font-medium"
             style={{ background: tag.bg, color: tag.color }}
           >
             {tagLabel}
           </span>
-          <h3 className="text-sm font-medium mb-1.5 group-hover:underline" style={{ color: '#1a1a1a' }}>
+          <h3 className="text-base font-semibold mb-3 leading-snug group-hover:underline" style={{ color: '#1a1a1a' }}>
             {title}
           </h3>
-          <div className="flex gap-3 text-xs text-gray-500 flex-wrap">
+          <div className="flex flex-col gap-1.5 text-sm text-gray-500">
             <span>📍 {job.location}</span>
             {job.salary_range && <span>💶 {job.salary_range}</span>}
           </div>
         </div>
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50">
           <span className="text-xs text-gray-300">CS · DE</span>
           <span className="text-sm transition-transform group-hover:translate-x-0.5" style={{ color: '#e07b0a' }}>→</span>
         </div>
