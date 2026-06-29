@@ -15,6 +15,7 @@ export async function GET() {
     id: u.id,
     email: u.email,
     role: u.user_metadata?.role ?? 'admin',
+    lang: u.user_metadata?.lang ?? 'cs',
     created_at: u.created_at,
     last_sign_in_at: u.last_sign_in_at,
   }))

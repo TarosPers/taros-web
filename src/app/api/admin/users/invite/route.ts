@@ -7,10 +7,10 @@ const supabaseAdmin = createClient(
 )
 
 export async function POST(req: NextRequest) {
-  const { email, role } = await req.json()
+  const { email, role, lang } = await req.json()
 
   const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-    data: { role },
+    data: { role, lang: lang ?? 'cs' },
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
