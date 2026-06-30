@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
+import RichEditor from '@/components/ui/RichEditor'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -88,48 +89,23 @@ export default function EditPagePage({ params }: { params: { id: string } }) {
           </button>
         </div>
 
-        {/* Tip pro formátování */}
-        <div className="bg-gray-50 rounded-lg p-3 mb-4 text-xs text-gray-500">
-          <strong>Tip:</strong> Podporuje HTML formátování.
-          Příklady: <code>&lt;h2&gt;Nadpis&lt;/h2&gt;</code>,
-          <code>&lt;p&gt;Odstavec&lt;/p&gt;</code>,
-          <code>&lt;ul&gt;&lt;li&gt;Bod&lt;/li&gt;&lt;/ul&gt;</code>,
-          <code>&lt;strong&gt;tučně&lt;/strong&gt;</code>
-        </div>
-
         {/* Editor */}
         {tab === 'cs' ? (
           <div>
             <label className="form-label mb-2 block">Obsah stránky – česky</label>
-            <textarea
+            <RichEditor
               value={content_cs}
-              onChange={(e) => setContentCs(e.target.value)}
-              className="form-input font-mono text-xs"
-              rows={20}
-              placeholder="<h2>Nadpis sekce</h2>&#10;<p>Text odstavce...</p>"
+              onChange={setContentCs}
+              placeholder="Obsah stránky v češtině..."
             />
           </div>
         ) : (
           <div>
             <label className="form-label mb-2 block">Seiteninhalt – Deutsch</label>
-            <textarea
+            <RichEditor
               value={content_de}
-              onChange={(e) => setContentDe(e.target.value)}
-              className="form-input font-mono text-xs"
-              rows={20}
-              placeholder="<h2>Abschnittsüberschrift</h2>&#10;<p>Absatztext...</p>"
-            />
-          </div>
-        )}
-
-        {/* Náhled */}
-        {(tab === 'cs' ? content_cs : content_de) && (
-          <div className="mt-4">
-            <div className="text-xs font-medium text-gray-400 mb-2">Náhled:</div>
-            <div
-              className="prose prose-sm max-w-none p-4 bg-gray-50 rounded-lg border border-gray-100 leading-relaxed"
-              style={{ color: '#374151' }}
-              dangerouslySetInnerHTML={{ __html: tab === 'cs' ? content_cs : content_de }}
+              onChange={setContentDe}
+              placeholder="Seiteninhalt auf Deutsch..."
             />
           </div>
         )}
