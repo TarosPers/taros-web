@@ -20,16 +20,28 @@ export default function AdminApplicantsPage() {
   const [applicants, setApplicants] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
+  const [isSuperadmin, setIsSuperadmin] = useState(false)
 
-  useEffect(() => { loadApplicants() }, [])
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.user_metadata?.role === 'superadmin') setIsSuperadmin(true)
+    })
+    loadApplicants()
+  }, [])
 
   const loadApplicants = async () => {
     const { data } = await supabase
       .from('applicants')
-      .select('*, job:jobs(title_cs)')
+      .select('*, job:jobs(title_cs, location)')
       .order('created_at', { ascending: false })
     setApplicants(data ?? [])
     setLoading(false)
+  }
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Opravdu smazat žadatele ${name}?`)) return
+    await supabase.from('applicants').delete().eq('id', id)
+    setApplicants(prev => prev.filter(a => a.id !== id))
   }
 
   const filtered = filter === 'all' ? applicants : applicants.filter(a => a.status === filter)
@@ -41,7 +53,6 @@ export default function AdminApplicantsPage() {
           <h1 className="text-xl font-medium" style={{ color: '#1a1a1a' }}>Žadatelé</h1>
           <p className="text-sm text-gray-400 mt-0.5">{applicants.length} celkem</p>
         </div>
-        {/* Filtry */}
         <div className="flex gap-2">
           {['all', 'new', 'reviewing', 'invited', 'hired', 'rejected'].map((s) => (
             <button
@@ -72,8 +83,8 @@ export default function AdminApplicantsPage() {
             <thead className="border-b border-gray-50">
               <tr>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">Jméno</th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">E-mail</th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">Pozice</th>
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">Lokalita</th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">Datum</th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">Stav</th>
                 <th className="px-5 py-3"></th>
@@ -87,8 +98,8 @@ export default function AdminApplicantsPage() {
                     <td className="px-5 py-3.5 font-medium" style={{ color: '#1a1a1a' }}>
                       {a.first_name} {a.last_name}
                     </td>
-                    <td className="px-5 py-3.5 text-gray-500">{a.email}</td>
                     <td className="px-5 py-3.5 text-gray-500">{a.job?.title_cs ?? '–'}</td>
+                    <td className="px-5 py-3.5 text-gray-500">{a.job?.location ?? '–'}</td>
                     <td className="px-5 py-3.5 text-xs text-gray-400">
                       {new Date(a.created_at).toLocaleDateString('cs-CZ')}
                     </td>
@@ -97,10 +108,18 @@ export default function AdminApplicantsPage() {
                         {s.label}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-5 py-3.5 flex items-center gap-3">
                       <Link href={`/admin/applicants/${a.id}`} className="text-xs" style={{ color: '#2a4f2d' }}>
                         Detail
                       </Link>
+                      {isSuperadmin && (
+                        <button
+                          onClick={() => handleDelete(a.id, `${a.first_name} ${a.last_name}`)}
+                          className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                        >
+                          Smazat
+                        </button>
+                      )}
                     </td>
                   </tr>
                 )
