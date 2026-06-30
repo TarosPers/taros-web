@@ -9,9 +9,33 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+const t = {
+  cs: {
+    jobs: 'Inzeráty',
+    applicants: 'Žadatelé',
+    pages: 'Stránky',
+    questionnaires: 'Dotazníky',
+    users: 'Uživatelé',
+    web: '← Web',
+    logout: 'Odhlásit',
+    loading: 'Načítám...',
+  },
+  de: {
+    jobs: 'Stellenangebote',
+    applicants: 'Bewerber',
+    pages: 'Seiten',
+    questionnaires: 'Fragebögen',
+    users: 'Benutzer',
+    web: '← Website',
+    logout: 'Abmelden',
+    loading: 'Laden...',
+  },
+}
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [isSuperadmin, setIsSuperadmin] = useState(false)
+  const [lang, setLang] = useState<'cs' | 'de'>('cs')
   const router = useRouter()
   const pathname = usePathname()
 
@@ -23,6 +47,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       if (session?.user?.user_metadata?.role === 'superadmin') {
         setIsSuperadmin(true)
       }
+      const userLang = session?.user?.user_metadata?.lang ?? 'cs'
+      setLang(userLang as 'cs' | 'de')
       setLoading(false)
     })
   }, [])
@@ -32,10 +58,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push('/admin/login')
   }
 
+  const tr = t[lang]
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#f2f8f1' }}>
-        <div className="text-sm text-gray-400">Načítám...</div>
+        <div className="text-sm text-gray-400">{tr.loading}</div>
       </div>
     )
   }
@@ -45,11 +73,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   const navItems = [
-    { href: '/admin/jobs',            label: 'Inzeráty' },
-    { href: '/admin/applicants',      label: 'Žadatelé' },
-    { href: '/admin/pages',           label: 'Stránky' },
-    { href: '/admin/questionnaires',  label: 'Dotazníky' },
-    ...(isSuperadmin ? [{ href: '/admin/users', label: 'Uživatelé' }] : []),
+    { href: '/admin/jobs',            label: tr.jobs },
+    { href: '/admin/applicants',      label: tr.applicants },
+    { href: '/admin/pages',           label: tr.pages },
+    { href: '/admin/questionnaires',  label: tr.questionnaires },
+    ...(isSuperadmin ? [{ href: '/admin/users', label: tr.users }] : []),
   ]
 
   return (
@@ -79,13 +107,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           <div className="flex items-center gap-4">
             <Link href="/" className="text-sm text-gray-400 hover:text-gray-600">
-              ← Web
+              {tr.web}
             </Link>
             <button
               onClick={handleLogout}
               className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
             >
-              Odhlásit
+              {tr.logout}
             </button>
           </div>
         </div>
