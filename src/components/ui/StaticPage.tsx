@@ -9,13 +9,12 @@ export default function StaticPage({ title, content }: Props) {
   return (
     <>
       <Navbar />
-      <main className="max-w-7xl mx-auto">
-        {/* Zelený pruh s názvem */}
-        <div className="px-8 py-8" style={{ background: '#2a4f2d' }}>
+      <div className="w-full px-8 py-8" style={{ background: '#2a4f2d' }}>
+        <div className="max-w-7xl mx-auto">
           <h1 className="text-2xl font-bold text-white">{title}</h1>
         </div>
-
-        {/* Obsah */}
+      </div>
+      <main className="max-w-7xl mx-auto">
         <div className="px-8 py-10">
           {content ? (
             <div
