@@ -31,7 +31,6 @@ export default function Navbar() {
   const navLinks = [
     { href: `${prefix}/jobs`, label: t('jobs') },
     { href: `${prefix}/for-companies`, label: t('forCompanies') },
-    { href: `${prefix}/about`, label: t('about') },
     { href: `${prefix}/contact`, label: t('contact') },
   ]
 

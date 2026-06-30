@@ -32,7 +32,7 @@ export default function Footer() {
   const [navOpen, setNavOpen] = useState(false)
 
   return (
-    <footer style={{ background: '#1e3d21' }} className="text-white mt-auto">
+    <footer id="contact" style={{ background: '#1e3d21' }} className="text-white mt-auto">
       <div className="max-w-6xl mx-auto px-6 py-12">
 
         {/* Top row */}
