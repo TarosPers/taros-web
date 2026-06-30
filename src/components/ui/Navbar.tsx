@@ -29,9 +29,9 @@ export default function Navbar() {
   }
 
   const navLinks = [
-    { href: `${prefix}/jobs`, label: t('jobs') },
-    { href: `${prefix}/for-companies`, label: t('forCompanies') },
-    { href: `${prefix}/contact`, label: t('contact') },
+    { href: `${prefix}/jobs`, label: t('jobs'), anchor: false },
+    { href: `${prefix}/for-companies`, label: t('forCompanies'), anchor: false },
+    { href: '#contact', label: t('contact'), anchor: true },
   ]
 
   return (
@@ -50,11 +50,17 @@ export default function Navbar() {
 
         {/* Desktop menu */}
         <div className="hidden sm:flex items-center gap-6">
-          {navLinks.map(({ href, label }) => (
-            <Link key={href} href={href} className="text-sm transition-colors" style={{ color: '#6b7280', textDecoration: 'none' }}>
-              {label}
-            </Link>
-          ))}
+          {navLinks.map(({ href, label, anchor }) =>
+            anchor ? (
+              <a key={href} href={href} className="text-sm transition-colors" style={{ color: '#6b7280', textDecoration: 'none' }}>
+                {label}
+              </a>
+            ) : (
+              <Link key={href} href={href} className="text-sm transition-colors" style={{ color: '#6b7280', textDecoration: 'none' }}>
+                {label}
+              </Link>
+            )
+          )}
           <Link
             href={`${prefix}/dotaznik`}
             className="text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
@@ -94,11 +100,17 @@ export default function Navbar() {
       {/* Mobile dropdown */}
       {menuOpen && (
         <div className="sm:hidden border-t border-gray-100 bg-white px-4 py-4 flex flex-col gap-4">
-          {navLinks.map(({ href, label }) => (
-            <Link key={href} href={href} onClick={() => setMenuOpen(false)} className="text-sm text-gray-600" style={{ textDecoration: 'none' }}>
-              {label}
-            </Link>
-          ))}
+          {navLinks.map(({ href, label, anchor }) =>
+            anchor ? (
+              <a key={href} href={href} onClick={() => setMenuOpen(false)} className="text-sm text-gray-600" style={{ textDecoration: 'none' }}>
+                {label}
+              </a>
+            ) : (
+              <Link key={href} href={href} onClick={() => setMenuOpen(false)} className="text-sm text-gray-600" style={{ textDecoration: 'none' }}>
+                {label}
+              </Link>
+            )
+          )}
           <div className="flex gap-2 pt-2 border-t border-gray-100">
             <button onClick={() => switchLocale('cs')} className="text-xs px-3 py-1.5 rounded-md border transition-colors" style={{ background: locale === 'cs' ? '#2a4f2d' : 'transparent', color: locale === 'cs' ? '#fff' : '#6b7280', borderColor: locale === 'cs' ? '#2a4f2d' : '#d1d5db' }}>CS</button>
             <button onClick={() => switchLocale('de')} className="text-xs px-3 py-1.5 rounded-md border transition-colors" style={{ background: locale === 'de' ? '#2a4f2d' : 'transparent', color: locale === 'de' ? '#fff' : '#6b7280', borderColor: locale === 'de' ? '#2a4f2d' : '#d1d5db' }}>DE</button>
