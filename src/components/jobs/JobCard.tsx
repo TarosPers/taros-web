@@ -31,11 +31,32 @@ export default function JobCard({ job }: { job: Job }) {
   return (
     <Link
       href={`/jobs/${job.slug}`}
-      className="flex bg-white border border-gray-100 rounded-xl overflow-hidden hover:border-gray-300 hover:shadow-sm transition-all no-underline group"
-      style={{ textDecoration: 'none', minHeight: '180px' }}
+      className="flex flex-col sm:flex-row bg-white border border-gray-100 rounded-xl overflow-hidden hover:border-gray-300 hover:shadow-sm transition-all no-underline group"
+      style={{ textDecoration: 'none' }}
     >
-      {/* Obrázek vlevo - 50% */}
-      <div className="flex-shrink-0 overflow-hidden" style={{ width: '50%' }}>
+      {/* Obrázek */}
+      <div className="flex-shrink-0 overflow-hidden" style={{ width: '100%', height: '200px' }}>
+        <div className="sm:hidden w-full h-full">
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={title}
+              className="w-full h-full transition-transform duration-300 group-hover:scale-105"
+              style={{ objectFit: 'cover' }}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #2a4f2d 0%, #3a6b3d 100%)' }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+              </svg>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Obrázek desktop */}
+      <div className="hidden sm:block flex-shrink-0 overflow-hidden" style={{ width: '50%' }}>
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -44,10 +65,7 @@ export default function JobCard({ job }: { job: Job }) {
             style={{ objectFit: 'cover', background: '#f9fafb' }}
           />
         ) : (
-          <div
-            className="w-full h-full flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, #2a4f2d 0%, #3a6b3d 100%)' }}
-          >
+          <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #2a4f2d 0%, #3a6b3d 100%)' }}>
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
               <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
@@ -56,8 +74,8 @@ export default function JobCard({ job }: { job: Job }) {
         )}
       </div>
 
-      {/* Obsah vpravo - 50% */}
-      <div className="flex flex-col justify-between p-5" style={{ width: '50%' }}>
+      {/* Obsah */}
+      <div className="flex flex-col justify-between p-5 flex-1">
         <div>
           <span
             className="inline-block text-xs px-2.5 py-0.5 rounded-full mb-3 font-medium"

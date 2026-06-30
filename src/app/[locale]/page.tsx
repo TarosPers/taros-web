@@ -59,14 +59,14 @@ function HeroBanner({ locale }: { locale: string }) {
 function JobsSection({ jobs }: { jobs: any[] }) {
   const t = useTranslations('jobs')
   return (
-    <section id="jobs" className="px-8 py-12 border-b border-gray-100">
+    <section id="jobs" className="px-4 sm:px-8 py-12 border-b border-gray-100">
       <div className="section-label">{t('sectionLabel')}</div>
       <h2 className="section-title">{t('title')}</h2>
       <p className="text-sm text-gray-500 mb-7">{t('subtitle')}</p>
       {jobs.length === 0 ? (
         <p className="text-gray-400 text-sm">{t('noJobs')}</p>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {jobs.map((job) => (
             <JobCard key={job.id} job={job} />
           ))}
@@ -92,10 +92,10 @@ function HowItWorksSection() {
     { num: '04', icon: '✅', titleKey: 'step4Title', descKey: 'step4Desc' },
   ] as const
   return (
-    <section className="px-8 py-12 bg-gray-50 border-b border-gray-100">
+    <section className="px-4 sm:px-8 py-12 bg-gray-50 border-b border-gray-100">
       <div className="section-label">{t('sectionLabel')}</div>
       <h2 className="section-title">{t('title')}</h2>
-      <div className="grid grid-cols-4 gap-3 mt-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
         {steps.map(({ num, icon, titleKey, descKey }) => (
           <div
             key={num}
@@ -116,7 +116,7 @@ function CtaBand() {
   const t = useTranslations('cta')
   return (
     <section
-      className="px-8 py-9 flex items-center justify-between border-b"
+      className="px-4 sm:px-8 py-9 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border-b"
       style={{ background: '#2a4f2d', borderColor: '#1e3d21' }}
     >
       <h3 className="text-xl font-normal text-white leading-snug">
@@ -154,10 +154,10 @@ function ContactSection() {
     { icon: '🕐', text: t('hours') },
   ]
   return (
-    <section className="px-8 py-12 border-b border-gray-100">
+    <section className="px-4 sm:px-8 py-12 border-b border-gray-100">
       <div className="section-label">{t('sectionLabel')}</div>
       <h2 className="section-title">{t('title')}</h2>
-      <div className="grid gap-10 mt-6" style={{ gridTemplateColumns: '1fr 1.4fr' }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-10 mt-6">
         <div>
           <p className="text-sm text-gray-500 leading-relaxed mb-5">{t('description')}</p>
           {contactItems.map(({ icon, text }) => (
