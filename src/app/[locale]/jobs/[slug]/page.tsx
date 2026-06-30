@@ -155,9 +155,16 @@ export default async function JobDetailPage({ params }: Props) {
         </div>
 
         <div className="px-8 py-8 border-t border-gray-100">
-          <h2 className="text-lg font-medium mb-6" style={{ color: '#1a1a1a' }}>
+          <h2 className="text-xl font-bold mb-2 uppercase tracking-wide" style={{ color: '#1e3d21' }}>
             {locale === 'de' ? 'Jetzt bewerben' : 'Zažádat hned'}
           </h2>
+          <p className="text-sm text-gray-500 mb-6">
+            {locale === 'de' ? (
+              <>Wenn Sie sich für diese Stelle interessieren. Für weitere Positionen füllen Sie bitte <a href="/de/dotaznik" style={{ color: '#2a4f2d' }}>den Fragebogen</a> aus.</>
+            ) : (
+              <>Pokud se zajímáte konkrétně o toto pracovní místo. Pokud máte zájem i o další pozice, vyplňte <a href="/dotaznik" style={{ color: '#2a4f2d' }}>dotazník</a>.</>
+            )}
+          </p>
           <JobApplicationForm
             jobId={job.id}
             jobTitle={title}
