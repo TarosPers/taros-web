@@ -6,6 +6,16 @@ interface Props {
 }
 
 export default function StaticPage({ title, content }: Props) {
+  const cleanContent = content
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<!DOCTYPE[^>]*>/gi, '')
+    .replace(/<html[^>]*>/gi, '')
+    .replace(/<\/html>/gi, '')
+    .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '')
+    .replace(/<body[^>]*>/gi, '')
+    .replace(/<\/body>/gi, '')
+    .trim()
+
   return (
     <>
       <Navbar />
@@ -16,11 +26,11 @@ export default function StaticPage({ title, content }: Props) {
       </div>
       <main className="max-w-7xl mx-auto">
         <div className="px-8 py-10">
-          {content ? (
+          {cleanContent ? (
             <div
               className="prose prose-sm max-w-3xl leading-relaxed"
               style={{ color: '#374151' }}
-              dangerouslySetInnerHTML={{ __html: content }}
+              dangerouslySetInnerHTML={{ __html: cleanContent }}
             />
           ) : (
             <p className="text-gray-400 text-sm">Obsah stránky bude brzy doplněn.</p>
