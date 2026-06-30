@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useLocale } from 'next-intl'
+import { useState } from 'react'
 
 const links = {
   cs: [
@@ -28,6 +29,7 @@ export default function Footer() {
   const locale = useLocale()
   const navLinks = links[locale as 'cs' | 'de'] ?? links.cs
   const prefix = locale === 'de' ? '/de' : ''
+  const [navOpen, setNavOpen] = useState(false)
 
   return (
     <footer style={{ background: '#1e3d21' }} className="text-white mt-auto">
@@ -51,7 +53,6 @@ export default function Footer() {
                 ? 'Ihr verlässlicher Partner für Arbeitsvermittlung.'
                 : 'Váš spolehlivý partner pro zprostředkování práce.'}
             </p>
-            {/* Facebook */}
             <a
               href="https://www.facebook.com/tarospracevnemecku/"
               target="_blank"
@@ -66,8 +67,8 @@ export default function Footer() {
             </a>
           </div>
 
-          {/* Navigation */}
-          <div>
+          {/* Navigation - desktop */}
+          <div className="hidden md:block">
             <h3 className="text-white/40 text-xs font-semibold tracking-widest uppercase mb-4">
               {locale === 'de' ? 'Navigation' : 'Navigace'}
             </h3>
@@ -84,6 +85,37 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
+          </div>
+
+          {/* Navigation - mobile hamburger */}
+          <div className="md:hidden">
+            <button
+              onClick={() => setNavOpen(!navOpen)}
+              className="flex items-center justify-between w-full"
+              style={{ color: 'rgba(255,255,255,0.7)' }}
+            >
+              <h3 className="text-white/40 text-xs font-semibold tracking-widest uppercase">
+                {locale === 'de' ? 'Navigation' : 'Navigace'}
+              </h3>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ transform: navOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }}>
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </button>
+            {navOpen && (
+              <ul className="space-y-2 mt-3">
+                {navLinks.map(link => (
+                  <li key={link.href}>
+                    <Link
+                      href={`${prefix}${link.href}`}
+                      className="hover:text-white text-sm transition-colors"
+                      style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none' }}
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* Contact */}
