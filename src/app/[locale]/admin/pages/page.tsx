@@ -8,42 +8,80 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-const PAGE_LABELS: Record<string, string> = {
-  about:           'O nás',
-  'for-companies': 'Pro firmy',
-  contact:         'Kontakt',
-  imprint:         'Impressum',
-  privacy:         'Zásady ochrany osobních údajů',
+const PAGE_LABELS = {
+  cs: {
+    about: 'O nás',
+    'for-companies': 'Pro firmy',
+    contact: 'Kontakt',
+    imprint: 'Impressum',
+    privacy: 'Zásady ochrany osobních údajů',
+  },
+  de: {
+    about: 'Über uns',
+    'for-companies': 'Für Unternehmen',
+    contact: 'Kontakt',
+    imprint: 'Impressum',
+    privacy: 'Datenschutzerklärung',
+  },
+}
+
+const t = {
+  cs: {
+    title: 'Stránky',
+    subtitle: 'Upravte obsah statických stránek webu',
+    loading: 'Načítám...',
+    colPage: 'Stránka',
+    colUrl: 'URL',
+    colUpdated: 'Upraveno',
+    edit: 'Upravit',
+  },
+  de: {
+    title: 'Seiten',
+    subtitle: 'Bearbeiten Sie den Inhalt der statischen Seiten',
+    loading: 'Laden...',
+    colPage: 'Seite',
+    colUrl: 'URL',
+    colUpdated: 'Geändert',
+    edit: 'Bearbeiten',
+  },
 }
 
 export default function AdminPagesPage() {
   const [pages, setPages] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [lang, setLang] = useState<'cs' | 'de'>('cs')
 
   useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      const userLang = user?.user_metadata?.lang ?? 'cs'
+      setLang(userLang as 'cs' | 'de')
+    })
     supabase.from('pages').select('*').then(({ data }) => {
       setPages(data ?? [])
       setLoading(false)
     })
   }, [])
 
+  const tr = t[lang]
+  const labels = PAGE_LABELS[lang]
+
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-xl font-medium" style={{ color: '#1a1a1a' }}>Stránky</h1>
-        <p className="text-sm text-gray-400 mt-0.5">Upravte obsah statických stránek webu</p>
+        <h1 className="text-xl font-medium" style={{ color: '#1a1a1a' }}>{tr.title}</h1>
+        <p className="text-sm text-gray-400 mt-0.5">{tr.subtitle}</p>
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-400">Načítám...</p>
+        <p className="text-sm text-gray-400">{tr.loading}</p>
       ) : (
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="border-b border-gray-50">
               <tr>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">Stránka</th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">URL</th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">Upraveno</th>
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">{tr.colPage}</th>
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">{tr.colUrl}</th>
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">{tr.colUpdated}</th>
                 <th className="px-5 py-3"></th>
               </tr>
             </thead>
@@ -51,7 +89,7 @@ export default function AdminPagesPage() {
               {pages.map((page) => (
                 <tr key={page.id} className="hover:bg-gray-50/50">
                   <td className="px-5 py-3.5 font-medium" style={{ color: '#1a1a1a' }}>
-                    {PAGE_LABELS[page.id] ?? page.id}
+                    {labels[page.id as keyof typeof labels] ?? page.id}
                   </td>
                   <td className="px-5 py-3.5 text-gray-400 text-xs">/{page.id}</td>
                   <td className="px-5 py-3.5 text-xs text-gray-400">
@@ -59,7 +97,7 @@ export default function AdminPagesPage() {
                   </td>
                   <td className="px-5 py-3.5">
                     <Link href={`/admin/pages/${page.id}`} className="text-xs" style={{ color: '#2a4f2d' }}>
-                      Upravit
+                      {tr.edit}
                     </Link>
                   </td>
                 </tr>
