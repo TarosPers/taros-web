@@ -141,7 +141,7 @@ export default function AdminApplicantsPage() {
                     <td className="px-5 py-3.5 font-medium" style={{ color: '#1a1a1a' }}>
                       {a.first_name} {a.last_name}
                     </td>
-                    <td className="px-5 py-3.5 text-gray-500">{a.job?.title_cs ?? '–'}</td>
+                    <td className="px-5 py-3.5 text-gray-500">{lang === 'de' ? (a.job?.title_de ?? a.job?.title_cs ?? '–') : (a.job?.title_cs ?? '–')}</td>
                     <td className="px-5 py-3.5 text-gray-500">{a.job?.location ?? '–'}</td>
                     <td className="px-5 py-3.5 text-xs text-gray-400">
                       {new Date(a.created_at).toLocaleDateString('cs-CZ')}
