@@ -27,7 +27,7 @@ const t = {
     new: '+ Nový inzerát',
     empty: 'Zatím žádné inzeráty',
     addFirst: 'Přidat první inzerát →',
-    colPosition: 'Pozice (CS)',
+    colPosition: 'Pozice',
     colLocation: 'Lokalita',
     colType: 'Typ',
     colStatus: 'Stav',
@@ -49,7 +49,7 @@ const t = {
     new: '+ Neue Stelle',
     empty: 'Noch keine Stellenangebote',
     addFirst: 'Erste Stelle hinzufügen →',
-    colPosition: 'Position (CS)',
+    colPosition: 'Position',
     colLocation: 'Standort',
     colType: 'Art',
     colStatus: 'Status',
@@ -156,7 +156,7 @@ export default function AdminJobsPage() {
                   className="hover:bg-gray-50/50 cursor-pointer"
                   onClick={() => router.push(`/admin/jobs/${job.id}`)}
                 >
-                  <td className="px-5 py-3.5 font-medium" style={{ color: '#1a1a1a' }}>{job.title_cs}</td>
+                  <td className="px-5 py-3.5 font-medium" style={{ color: '#1a1a1a' }}>{lang === 'de' ? job.title_de : job.title_cs}</td>
                   <td className="px-5 py-3.5 text-gray-500">{job.location}</td>
                   <td className="px-5 py-3.5 text-gray-500">{typeLabels[job.type] ?? job.type}</td>
                   <td className="px-5 py-3.5">
