@@ -8,7 +8,7 @@ const schema = z.object({
   firstName: z.string().min(1),
   lastName:  z.string().min(1),
   email:     z.string().email(),
-  phone:     z.string().optional(),
+  phone:     z.string().min(1),
   message:   z.string().optional(),
   gdpr:      z.literal(true, { errorMap: () => ({ message: 'Povinné' }) }),
 })
@@ -82,7 +82,7 @@ export default function JobApplicationForm({ jobId, jobTitle, jobLocation, local
           <input type="email" {...register('email')} className={`form-input ${errors.email ? 'border-red-300' : ''}`} />
         </div>
         <div>
-          <label className="form-label">{isDE ? 'Telefon' : 'Telefon'}</label>
+          <label className="form-label">{isDE ? 'Telefon' : 'Telefon'}*</label>
           <input type="tel" {...register('phone')} className="form-input" />
         </div>
       </div>
