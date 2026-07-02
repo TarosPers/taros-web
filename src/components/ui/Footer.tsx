@@ -65,6 +65,13 @@ export default function Footer() {
               </svg>
               Facebook
             </a>
+            <a
+              href="/admin/login"
+              className="block mt-4 text-xs hover:text-white/30 transition-colors"
+              style={{ color: 'rgba(255,255,255,0.15)', textDecoration: 'none' }}
+            >
+              Admin
+            </a>
           </div>
 
           {/* Navigation - desktop */}
@@ -87,7 +94,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Navigation - mobile hamburger */}
+          {/* Navigation - mobile accordion */}
           <div className="md:hidden">
             <button
               onClick={() => setNavOpen(!navOpen)}
