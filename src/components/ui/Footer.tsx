@@ -67,7 +67,7 @@ export default function Footer() {
             </a>
             <a
               href="/admin/login"
-               className="block mt-4 text-xs hover:text-white transition-colors"
+               className="block mt-8 text-xs hover:text-white transition-colors"
                style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}
 >
                {locale === 'de' ? 'Anmelden' : 'Přihlášení'}
