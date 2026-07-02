@@ -1,3 +1,6 @@
+
+'use client'
+
 import DotaznikForm from '@/components/ui/DotaznikForm'
 import Navbar from '@/components/ui/Navbar'
 import Footer from '@/components/ui/Footer'
