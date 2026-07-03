@@ -34,10 +34,12 @@ export default function Navbar() {
     { href: '#contact', label: t('contact'), anchor: true },
   ]
 
+  const FlagCZ = () => <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>&#127464;&#127487;</span>
+  const FlagDE = () => <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>&#127465;&#127466;</span>
+
   return (
     <nav className="border-b border-gray-100 bg-white sticky top-0 z-50">
       <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-8 py-2">
-        {/* Logo */}
         <Link href={prefix || '/'} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
           <Image
             src="/images/logo.png"
@@ -71,30 +73,30 @@ export default function Navbar() {
           <div className="flex items-center gap-1 ml-2">
             <button
               onClick={() => switchLocale('cs')}
-              className="text-lg px-1.5 py-0.5 rounded-md border transition-all"
+              className="px-1.5 py-0.5 rounded-md border transition-all"
               style={{
                 borderColor: locale === 'cs' ? '#2a4f2d' : 'transparent',
                 opacity: locale === 'cs' ? 1 : 0.5,
               }}
               title="Čeština"
             >
-              🇨🇿
+              <FlagCZ />
             </button>
             <button
               onClick={() => switchLocale('de')}
-              className="text-lg px-1.5 py-0.5 rounded-md border transition-all"
+              className="px-1.5 py-0.5 rounded-md border transition-all"
               style={{
                 borderColor: locale === 'de' ? '#2a4f2d' : 'transparent',
                 opacity: locale === 'de' ? 1 : 0.5,
               }}
               title="Deutsch"
             >
-              🇩🇪
+              <FlagDE />
             </button>
           </div>
         </div>
 
-        {/* Mobile: Dotazník + hamburger */}
+        {/* Mobile */}
         <div className="flex sm:hidden items-center gap-3">
           <Link
             href={`${prefix}/dotaznik`}
@@ -134,23 +136,23 @@ export default function Navbar() {
           <div className="flex gap-3 pt-2 border-t border-gray-100">
             <button
               onClick={() => switchLocale('cs')}
-              className="text-lg px-2 py-1 rounded-md border transition-all"
+              className="px-2 py-1 rounded-md border transition-all"
               style={{
                 borderColor: locale === 'cs' ? '#2a4f2d' : 'transparent',
                 opacity: locale === 'cs' ? 1 : 0.5,
               }}
             >
-              🇨🇿
+              <FlagCZ />
             </button>
             <button
               onClick={() => switchLocale('de')}
-              className="text-lg px-2 py-1 rounded-md border transition-all"
+              className="px-2 py-1 rounded-md border transition-all"
               style={{
                 borderColor: locale === 'de' ? '#2a4f2d' : 'transparent',
                 opacity: locale === 'de' ? 1 : 0.5,
               }}
             >
-              🇩🇪
+              <FlagDE />
             </button>
           </div>
         </div>
