@@ -6,6 +6,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
 
+const FlagCZ = () => <img src="/images/flag-cz.svg" alt="CZ" style={{ width: '24px', height: '16px', objectFit: 'cover', borderRadius: '2px' }} />
+const FlagDE = () => <img src="/images/flag-de.svg" alt="DE" style={{ width: '24px', height: '16px', objectFit: 'cover', borderRadius: '2px' }} />
+
 export default function Navbar() {
   const t = useTranslations('nav')
   const locale = useLocale()
@@ -33,9 +36,6 @@ export default function Navbar() {
     { href: `${prefix}/for-companies`, label: t('forCompanies'), anchor: false },
     { href: '#contact', label: t('contact'), anchor: true },
   ]
-
-  const FlagCZ = () => <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>&#127464;&#127487;</span>
-  const FlagDE = () => <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>&#127465;&#127466;</span>
 
   return (
     <nav className="border-b border-gray-100 bg-white sticky top-0 z-50">
