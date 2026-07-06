@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const ADMIN_EMAIL = 't.strnad@taros-personal.de'
+const ADMIN_EMAILS = ['t.strnad@taros-personal.de', 't.wagner@taros-personal.de', 'j.simsa@taros-personal.de']
 const FROM_EMAIL = 'Taros Personal <info@taros-personal.cz>'
 
 function emailLayout(content: string) {
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     // Email adminovi
     await resend.emails.send({
       from: FROM_EMAIL,
-      to: ADMIN_EMAIL,
+      to: ADMIN_EMAILS,
       subject: `Kontaktní formulář: ${subject}`,
       html: emailLayout(`
         <h2 style="margin:0 0 24px;color:#1a1a1a;font-size:22px;">Nová zpráva z webu</h2>

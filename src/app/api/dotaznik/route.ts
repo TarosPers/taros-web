@@ -8,7 +8,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 const resend = new Resend(process.env.RESEND_API_KEY)
-const ADMIN_EMAIL = 't.strnad@taros-personal.de'
+const ADMIN_EMAILS = ['t.strnad@taros-personal.de', 't.wagner@taros-personal.de', 'j.simsa@taros-personal.de']
 const MAKE_EMAIL = '97dv7wspqu6l9wifj83imrk5ldfbls7l@hook.eu2.make.com'
 const FROM_EMAIL = 'Taros Personal <info@taros-personal.cz>'
 
@@ -268,10 +268,10 @@ export async function POST(req: NextRequest) {
       ${attachments.length > 0 ? `<p style="color:#999;font-size:11px;margin-top:12px;">📎 Přílohy: ${attachments.map(a => a.filename).join(', ')}</p>` : ''}
     `)
 
-    // Email na admina + Make hook
+    // Email na adminy + Make hook
     await resend.emails.send({
       from: FROM_EMAIL,
-      to: [ADMIN_EMAIL, MAKE_EMAIL],
+      to: [...ADMIN_EMAILS, MAKE_EMAIL],
       subject: `Nový dotazník: ${data.firstName} ${data.lastName}`,
       attachments: attachments.length > 0 ? attachments : undefined,
       html: adminHtml,
