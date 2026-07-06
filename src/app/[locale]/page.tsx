@@ -27,6 +27,7 @@ export default async function HomePage() {
     .from('jobs')
     .select('*')
     .eq('active', true)
+    .eq('listing_type', 'standard')
     .order('created_at', { ascending: false })
     .limit(4)
 
