@@ -15,6 +15,9 @@ const t = {
     notFound: 'Dotazník nenalezen',
     save: 'Uložit změny',
     saving: 'Ukládám...',
+    delete: 'Smazat dotazník',
+    deleting: 'Mažu...',
+    confirmDelete: 'Opravdu smazat tento dotazník? Tuto akci nelze vrátit zpět.',
     status: 'Stav',
     notes: 'Interní poznámky',
     notesPlaceholder: 'Poznámky viditelné pouze v administraci...',
@@ -43,6 +46,9 @@ const t = {
     notFound: 'Fragebogen nicht gefunden',
     save: 'Änderungen speichern',
     saving: 'Speichere...',
+    delete: 'Fragebogen löschen',
+    deleting: 'Lösche...',
+    confirmDelete: 'Diesen Fragebogen wirklich löschen? Dies kann nicht rückgängig gemacht werden.',
     status: 'Status',
     notes: 'Interne Notizen',
     notesPlaceholder: 'Notizen nur in der Verwaltung sichtbar...',
@@ -73,6 +79,7 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
   const [status, setStatus] = useState('new')
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [loading, setLoading] = useState(true)
   const [lang, setLang] = useState<'cs' | 'de'>('cs')
 
@@ -97,6 +104,13 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
     setSaving(false)
   }
 
+  const handleDelete = async () => {
+    if (!confirm(tr.confirmDelete)) return
+    setDeleting(true)
+    await supabase.from('questionnaires').delete().eq('id', params.id)
+    router.push('/admin/questionnaires')
+  }
+
   const tr = t[lang]
 
   if (loading) return <div className="text-sm text-gray-400">{tr.loading}</div>
@@ -119,11 +133,20 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
 
   return (
     <div className="max-w-3xl">
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => router.back()} className="text-sm text-gray-400 hover:text-gray-600">{tr.back}</button>
-        <h1 className="text-xl font-medium" style={{ color: '#1a1a1a' }}>
-          {data.first_name} {data.last_name}
-        </h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <button onClick={() => router.back()} className="text-sm text-gray-400 hover:text-gray-600">{tr.back}</button>
+          <h1 className="text-xl font-medium" style={{ color: '#1a1a1a' }}>
+            {data.first_name} {data.last_name}
+          </h1>
+        </div>
+        <button
+          onClick={handleDelete}
+          disabled={deleting}
+          className="text-xs px-3 py-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-60"
+        >
+          {deleting ? tr.deleting : tr.delete}
+        </button>
       </div>
 
       <div className="space-y-4">

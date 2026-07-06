@@ -22,6 +22,8 @@ const t = {
     colDate: 'Datum',
     colStatus: 'Stav',
     detail: 'Detail',
+    delete: 'Smazat',
+    confirmDelete: 'Opravdu smazat tento dotazník? Tuto akci nelze vrátit zpět.',
     statuses: {
       new: { label: 'Nový', bg: '#eff6ff', color: '#3b82f6' },
       reviewing: { label: 'Probíhá', bg: '#fef3e6', color: '#e07b0a' },
@@ -43,6 +45,8 @@ const t = {
     colDate: 'Datum',
     colStatus: 'Status',
     detail: 'Details',
+    delete: 'Löschen',
+    confirmDelete: 'Diesen Fragebogen wirklich löschen? Dies kann nicht rückgängig gemacht werden.',
     statuses: {
       new: { label: 'Neu', bg: '#eff6ff', color: '#3b82f6' },
       reviewing: { label: 'In Bearbeitung', bg: '#fef3e6', color: '#e07b0a' },
@@ -74,6 +78,14 @@ export default function AdminQuestionnairesPage() {
       .order('created_at', { ascending: false })
     setItems(data ?? [])
     setLoading(false)
+  }
+
+  const deleteItem = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
+    e.preventDefault()
+    if (!confirm(tr.confirmDelete)) return
+    await supabase.from('questionnaires').delete().eq('id', id)
+    load()
   }
 
   const tr = t[lang]
@@ -144,9 +156,14 @@ export default function AdminQuestionnairesPage() {
                       </span>
                     </td>
                     <td className="px-5 py-3.5">
-                      <Link href={`/admin/questionnaires/${q.id}`} className="text-xs" style={{ color: '#2a4f2d' }}>
-                        {tr.detail}
-                      </Link>
+                      <div className="flex items-center gap-3">
+                        <Link href={`/admin/questionnaires/${q.id}`} className="text-xs" style={{ color: '#2a4f2d' }}>
+                          {tr.detail}
+                        </Link>
+                        <button onClick={(e) => deleteItem(e, q.id)} className="text-xs text-red-400 hover:text-red-600">
+                          {tr.delete}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )
