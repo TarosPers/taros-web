@@ -85,12 +85,8 @@ function emailLayout(content: string) {
 </head>
 <body style="margin:0;padding:20px;background:#f5f5f5;font-family:Arial,sans-serif;font-size:13px;">
   <div class="container" style="max-width:750px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
-    <div style="background:#2a4f2d;padding:12px 32px;">
-      <div style="display:inline-flex;align-items:baseline;gap:4px;">
-        <span style="color:#ffffff;font-size:24px;font-weight:300;font-family:Georgia,serif;">T</span>
-        <span style="color:rgba(255,255,255,0.9);font-size:14px;font-weight:300;letter-spacing:3px;">AROS</span>
-        <span style="color:rgba(255,255,255,0.4);font-size:10px;margin-left:8px;">Personalservice GmbH</span>
-      </div>
+    <div style="background:#ffffff;padding:12px 32px;border-bottom:1px solid #eeeeee;">
+      <img src="https://www.taros-personal.cz/images/logo.png" alt="Taros Personalservice" style="height:28px;display:block;" />
     </div>
     <div style="padding:24px 32px;">
       ${content}
@@ -107,12 +103,8 @@ function emailLayoutSimple(content: string) {
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
         <tr>
-          <td style="background:#2a4f2d;padding:20px 40px;">
-            <div style="display:inline-flex;align-items:baseline;gap:4px;">
-              <span style="color:#ffffff;font-size:24px;font-weight:300;font-family:Georgia,serif;">T</span>
-              <span style="color:rgba(255,255,255,0.9);font-size:14px;font-weight:300;letter-spacing:3px;">AROS</span>
-              <span style="color:rgba(255,255,255,0.4);font-size:10px;margin-left:8px;">Personalservice GmbH</span>
-            </div>
+          <td style="background:#ffffff;padding:20px 40px;border-bottom:1px solid #eeeeee;">
+            <img src="https://www.taros-personal.cz/images/logo.png" alt="Taros Personalservice" style="height:32px;display:block;" />
           </td>
         </tr>
         <tr><td style="padding:40px;">${content}</td></tr>

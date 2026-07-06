@@ -19,9 +19,8 @@ function emailLayout(content: string) {
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
         <tr>
-          <td style="background:#2a4f2d;padding:28px 40px;text-align:center;">
-            <div style="color:#ffffff;font-size:28px;font-weight:300;letter-spacing:4px;">TAROS</div>
-            <div style="color:rgba(255,255,255,0.6);font-size:11px;letter-spacing:2px;margin-top:2px;">PERSONALSERVICE GMBH</div>
+          <td style="background:#ffffff;padding:28px 40px;text-align:center;border-bottom:1px solid #eeeeee;">
+            <img src="https://www.taros-personal.cz/images/logo.png" alt="Taros Personalservice" style="height:40px;display:block;margin:0 auto;" />
           </td>
         </tr>
         <tr>
