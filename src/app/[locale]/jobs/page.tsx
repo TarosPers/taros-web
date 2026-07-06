@@ -22,6 +22,7 @@ export default async function JobsPage() {
     .from('jobs')
     .select('*')
     .eq('active', true)
+    .eq('listing_type', 'standard')
     .order('created_at', { ascending: false })
 
   const allJobs = jobs ?? []
