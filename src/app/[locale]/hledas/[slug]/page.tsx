@@ -18,12 +18,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!job) return {}
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.taros-personal.cz'
+
   return {
     title: `${job.title_cs} | Taros Personalservice`,
     description: `Práce v Německu – ${job.location}. Vyplňte dotazník a ozveme se Vám.`,
     openGraph: {
       title: job.title_cs,
-      images: job.og_image_fb_url ? [job.og_image_fb_url] : ['/images/hero-cs.jpg'],
+      description: `Práce v Německu – ${job.location}. Vyplňte dotazník a ozveme se Vám.`,
+      url: `${siteUrl}/hledas/${slug}`,
+      type: 'website',
+      images: job.og_image_fb_url
+        ? [{ url: job.og_image_fb_url, width: 1200, height: 630 }]
+        : [{ url: '/images/hero-cs.jpg', width: 1200, height: 630 }],
     },
   }
 }
