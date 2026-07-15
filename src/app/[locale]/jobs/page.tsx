@@ -25,7 +25,10 @@ export default async function JobsPage() {
     .eq('listing_type', 'standard')
     .order('created_at', { ascending: false })
 
-  const allJobs = jobs ?? []
+  const allJobs = (jobs ?? []).filter((job) => {
+    if (locale !== 'de') return true
+    return Boolean(job.title_de) && Boolean(job.description_de)
+  })
 
   return (
     <>

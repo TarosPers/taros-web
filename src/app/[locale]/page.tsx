@@ -31,12 +31,17 @@ export default async function HomePage() {
     .order('created_at', { ascending: false })
     .limit(4)
 
+  const filteredJobs = (jobs ?? []).filter((job) => {
+    if (locale !== 'de') return true
+    return Boolean(job.title_de) && Boolean(job.description_de)
+  })
+
   return (
     <>
       <Navbar />
       <main className="max-w-7xl mx-auto">
         <HeroBanner locale={locale} />
-        <JobsSection jobs={jobs ?? []} />
+        <JobsSection jobs={filteredJobs} />
         <HowItWorksSection />
         <CtaBand />
         <ContactSection />

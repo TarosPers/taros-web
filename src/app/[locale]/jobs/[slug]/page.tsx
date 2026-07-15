@@ -36,6 +36,9 @@ export default async function JobDetailPage({ params }: Props) {
 
   if (!job) notFound()
 
+  // Na německé verzi skryj inzeráty, které nemají kompletní německý text
+  if (locale === 'de' && (!job.title_de || !job.description_de)) notFound()
+
   const t = await getTranslations({ locale, namespace: 'jobs' })
   const title = locale === 'de' ? job.title_de : job.title_cs
   const description = locale === 'de' ? job.description_de : job.description_cs
