@@ -39,6 +39,23 @@ export default function AdminRedirectsPage() {
   const normalizePath = (p: string) => {
     let v = p.trim()
     if (!v) return v
+
+    // Vložená celá URL s protokolem (https://...) → vezmi jen cestu
+    if (/^https?:\/\//i.test(v)) {
+      try {
+        v = new URL(v).pathname
+      } catch {
+        // necháme beze změny, projde jako neplatné níž
+      }
+    } else if (!v.startsWith('/') && v.includes('.') && v.includes('/')) {
+      // Doména bez protokolu, např. "www.taros-personal.cz/jobs/xxx"
+      try {
+        v = new URL('https://' + v).pathname
+      } catch {
+        // necháme beze změny
+      }
+    }
+
     if (!v.startsWith('/')) v = '/' + v
     if (v.length > 1 && v.endsWith('/')) v = v.slice(0, -1)
     return v
@@ -132,8 +149,13 @@ export default function AdminRedirectsPage() {
           </div>
         </form>
         {error && <p className="text-xs text-red-500 mt-3">{error}</p>}
+        {(fromPath || toPath) && !error && (
+          <p className="text-xs text-gray-400 mt-3">
+            Uloží se jako: <code className="text-gray-600">{normalizePath(fromPath) || '…'}</code> → <code className="text-gray-600">{normalizePath(toPath) || '…'}</code>
+          </p>
+        )}
         <p className="text-xs text-gray-400 mt-3">
-          Cesty zadávejte přesně tak, jak se objeví v adresním řádku, včetně případného <code>/de</code> na začátku (např. <code>/de/jobs/stary-slug</code>). Bez domény.
+          Cesty zadávejte přesně tak, jak se objeví v adresním řádku, včetně případného <code>/de</code> na začátku (např. <code>/de/jobs/stary-slug</code>). Můžeš vložit i celou URL (např. z prohlížeče) — doména se automaticky odstraní.
         </p>
       </div>
 
