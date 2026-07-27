@@ -8,7 +8,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 const resend = new Resend(process.env.RESEND_API_KEY)
-const ADMIN_EMAIL = 't.strnad@taros-personal.de'
+const ADMIN_EMAILS = ['t.strnad@taros-personal.de', 't.wagner@taros-personal.de', 'j.simsa@taros-personal.de']
 const MAKE_EMAIL = '97dv7wspqu6l9wifj83imrk5ldfbls7l@hook.eu2.make.com'
 const FROM_EMAIL = 'Taros Personal <info@taros-personal.cz>'
 
@@ -85,12 +85,8 @@ function emailLayout(content: string) {
 </head>
 <body style="margin:0;padding:20px;background:#f5f5f5;font-family:Arial,sans-serif;font-size:13px;">
   <div class="container" style="max-width:750px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
-    <div style="background:#2a4f2d;padding:12px 32px;">
-      <div style="display:inline-flex;align-items:baseline;gap:4px;">
-        <span style="color:#ffffff;font-size:24px;font-weight:300;font-family:Georgia,serif;">T</span>
-        <span style="color:rgba(255,255,255,0.9);font-size:14px;font-weight:300;letter-spacing:3px;">AROS</span>
-        <span style="color:rgba(255,255,255,0.4);font-size:10px;margin-left:8px;">Personalservice GmbH</span>
-      </div>
+    <div style="background:#ffffff;padding:12px 32px;border-bottom:1px solid #eeeeee;">
+      <img src="https://www.taros-personal.cz/images/logo.png" alt="Taros Personalservice" style="height:28px;display:block;" />
     </div>
     <div style="padding:24px 32px;">
       ${content}
@@ -107,12 +103,8 @@ function emailLayoutSimple(content: string) {
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
         <tr>
-          <td style="background:#2a4f2d;padding:20px 40px;">
-            <div style="display:inline-flex;align-items:baseline;gap:4px;">
-              <span style="color:#ffffff;font-size:24px;font-weight:300;font-family:Georgia,serif;">T</span>
-              <span style="color:rgba(255,255,255,0.9);font-size:14px;font-weight:300;letter-spacing:3px;">AROS</span>
-              <span style="color:rgba(255,255,255,0.4);font-size:10px;margin-left:8px;">Personalservice GmbH</span>
-            </div>
+          <td style="background:#ffffff;padding:20px 40px;border-bottom:1px solid #eeeeee;">
+            <img src="https://www.taros-personal.cz/images/logo.png" alt="Taros Personalservice" style="height:32px;display:block;" />
           </td>
         </tr>
         <tr><td style="padding:40px;">${content}</td></tr>
@@ -230,54 +222,64 @@ export async function POST(req: NextRequest) {
 
     await appendToSheet(data, profese)
 
-    const workTypeLabel = data.workType === 'pendler' ? 'Pendler (denní dojíždění)' : data.workType === 'ubytovani' ? 'S ubytováním' : '–'
+    // Popisky u admin e-mailu jsou dvojjazyčné (CS / DE) – příjemci jsou i němečtí kolegové
+    const workTypeLabel = data.workType === 'pendler'
+      ? 'Pendler (denní dojíždění) / Pendler (tägliches Pendeln)'
+      : data.workType === 'ubytovani'
+      ? 'S ubytováním / Mit Unterkunft'
+      : '–'
+
     const educationLabels: Record<string, string> = {
-      zakladni: 'Základní', vyceni: 'Vyučení v oboru', stredni: 'Střední škola',
-      vos: 'Vyšší odborná škola', vs: 'Vysoká škola',
+      zakladni: 'Základní / Grundschule',
+      vyceni: 'Vyučení v oboru / Ausbildung im Beruf',
+      stredni: 'Střední škola / Mittelschule',
+      vos: 'Vyšší odborná škola / Fachschule',
+      vs: 'Vysoká škola / Universität',
     }
 
     const adminHtml = emailLayout(`
-      <h2 style="margin:0 0 16px;color:#1a1a1a;font-size:18px;">Nový dotazník od uchazeče</h2>
+      <h2 style="margin:0 0 16px;color:#1a1a1a;font-size:18px;">Nový dotazník od uchazeče / Neuer Fragebogen vom Bewerber</h2>
 
-      ${section('Osobní údaje', `
-        ${row2('Jméno', `${data.firstName} ${data.lastName}`, 'Datum narození', data.birthDate)}
-        ${row2('E-mail', `<a href="mailto:${data.email}" style="color:#2a4f2d;">${data.email}</a>`, 'Telefon', data.phone)}
-        ${row2('Adresa', `${data.street}, ${data.zip} ${data.city}`, 'Národnost / Rodinný stav', `${data.nationality || '–'} / ${data.maritalStatus || '–'}`)}
+      ${section('Osobní údaje / Persönliche Daten', `
+        ${row2('Jméno / Name', `${data.firstName} ${data.lastName}`, 'Datum narození / Geburtsdatum', data.birthDate)}
+        ${row2('E-mail / E-Mail', `<a href="mailto:${data.email}" style="color:#2a4f2d;">${data.email}</a>`, 'Telefon / Telefon', data.phone)}
+        ${row2('Adresa / Adresse', `${data.street}, ${data.zip} ${data.city}`, 'Národnost / Nationalität', data.nationality)}
+        ${row1('Rodinný stav / Familienstand', data.maritalStatus)}
       `)}
 
-      ${section('Profese a pracovní podmínky', `
-        ${row1('Poptávané profese', profese + (data.profeseJina ? ', ' + data.profeseJina : ''))}
-        ${row2('Nástup', data.startDate, 'Němčina', data.german)}
-        ${row2('Typ práce', workTypeLabel, 'Řidičský průkaz', data.drivingLicense)}
-        ${row2('Průkaz VZV', data.vzvLicense, 'Automobil', data.hasCar)}
+      ${section('Profese a pracovní podmínky / Beruf und Arbeitsbedingungen', `
+        ${row1('Poptávané profese / Gesuchte Berufe', profese + (data.profeseJina ? ', ' + data.profeseJina : ''))}
+        ${row2('Nástup / Arbeitsbeginn', data.startDate, 'Němčina / Deutschkenntnisse', data.german)}
+        ${row2('Typ práce / Arbeitsart', workTypeLabel, 'Řidičský průkaz / Führerschein', data.drivingLicense)}
+        ${row2('Průkaz VZV / Gabelstapler-Schein', data.vzvLicense, 'Automobil / Fahrzeug', data.hasCar)}
       `)}
 
-      ${section('Vzdělání', `
-        ${row2('Nejvyšší vzdělání', educationLabels[data.education] ?? data.education, 'Základní škola', data.primarySchool)}
-        ${row1('Škola / Obor', data.educationDetail)}
+      ${section('Vzdělání / Bildung', `
+        ${row2('Nejvyšší vzdělání / Höchste Bildung', educationLabels[data.education] ?? data.education, 'Základní škola / Grundschule', data.primarySchool)}
+        ${row1('Škola / Obor / Schule / Fachrichtung', data.educationDetail)}
       `)}
 
-      ${section('Pracovní zkušenosti', `
-        ${row1('Poslední zaměstnání', data.job1)}
-        ${row1('Předposlední zaměstnání', data.job2)}
-        ${row1('2. předposlední zaměstnání', data.job3)}
+      ${section('Pracovní zkušenosti / Berufserfahrung', `
+        ${row1('Poslední zaměstnání / Letzter Arbeitgeber', data.job1)}
+        ${row1('Předposlední zaměstnání / Vorletzter Arbeitgeber', data.job2)}
+        ${row1('2. předposlední zaměstnání / 2. Vorletzter Arbeitgeber', data.job3)}
       `)}
 
-      ${data.message ? section('Zpráva', row1('', data.message)) : ''}
+      ${data.message ? section('Zpráva / Nachricht', row1('', data.message)) : ''}
 
-      ${attachments.length > 0 ? `<p style="color:#999;font-size:11px;margin-top:12px;">📎 Přílohy: ${attachments.map(a => a.filename).join(', ')}</p>` : ''}
+      ${attachments.length > 0 ? `<p style="color:#999;font-size:11px;margin-top:12px;">📎 Přílohy / Anhänge: ${attachments.map(a => a.filename).join(', ')}</p>` : ''}
     `)
 
-    // Email na admina + Make hook
+    // Email na adminy + Make hook
     await resend.emails.send({
       from: FROM_EMAIL,
-      to: [ADMIN_EMAIL, MAKE_EMAIL],
+      to: [...ADMIN_EMAILS, MAKE_EMAIL],
       subject: `Nový dotazník: ${data.firstName} ${data.lastName}`,
       attachments: attachments.length > 0 ? attachments : undefined,
       html: adminHtml,
     })
 
-    // Potvrzovací email uchazeči
+    // Potvrzovací email uchazeči (beze změny, jen česky)
     await resend.emails.send({
       from: FROM_EMAIL,
       to: data.email,
