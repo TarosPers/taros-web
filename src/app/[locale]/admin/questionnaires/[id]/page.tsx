@@ -47,6 +47,12 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
     setSaving(false)
   }
 
+  const deleteQuestionnaire = async () => {
+    if (!confirm('Opravdu smazat tento dotazník?')) return
+    await supabase.from('questionnaires').delete().eq('id', params.id)
+    router.push('/admin/questionnaires')
+  }
+
   if (!q) return <div className="text-sm text-gray-400">Načítám...</div>
 
   const educationLabels: Record<string, string> = {
@@ -67,6 +73,12 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
         <span className="text-xs text-gray-400">
           {new Date(q.created_at).toLocaleDateString('cs-CZ')}
         </span>
+        <button
+          onClick={deleteQuestionnaire}
+          className="ml-auto text-xs px-3 py-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50"
+        >
+          Smazat
+        </button>
       </div>
 
       {/* Foto */}

@@ -18,6 +18,7 @@ interface Job {
   active: boolean
   created_at: string
   slug: string
+  listing_type: string
 }
 
 export default function AdminJobsPage() {
@@ -88,6 +89,7 @@ export default function AdminJobsPage() {
             <thead className="border-b border-gray-50">
               <tr>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">Pozice (CS)</th>
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">Druh</th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">Lokalita</th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">Typ</th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">Stav</th>
@@ -103,6 +105,17 @@ export default function AdminJobsPage() {
                   onClick={() => router.push(`/admin/jobs/${job.id}`)}
                 >
                   <td className="px-5 py-3.5 font-medium" style={{ color: '#1a1a1a' }}>{job.title_cs}</td>
+                  <td className="px-5 py-3.5">
+                    <span
+                      className="inline-block text-xs px-2.5 py-0.5 rounded-full font-medium"
+                      style={{
+                        background: job.listing_type === 'general' ? '#fef3e6' : '#eaf3e8',
+                        color: job.listing_type === 'general' ? '#e07b0a' : '#2a4f2d',
+                      }}
+                    >
+                      {job.listing_type === 'general' ? 'Obecný' : 'Standardní'}
+                    </span>
+                  </td>
                   <td className="px-5 py-3.5 text-gray-500">{job.location}</td>
                   <td className="px-5 py-3.5 text-gray-500">{typeLabels[job.type] ?? job.type}</td>
                   <td className="px-5 py-3.5">
@@ -126,7 +139,11 @@ export default function AdminJobsPage() {
                       <Link href={`/admin/jobs/${job.id}`} className="text-xs transition-colors" style={{ color: '#2a4f2d' }}>
                         Upravit
                       </Link>
-                      <Link href={`/jobs/${job.slug}`} className="text-xs text-gray-400 hover:text-gray-600" target="_blank">
+                      <Link
+                        href={job.listing_type === 'general' ? `/hledas/${job.slug}` : `/jobs/${job.slug}`}
+                        className="text-xs text-gray-400 hover:text-gray-600"
+                        target="_blank"
+                      >
                         Zobrazit
                       </Link>
                       <button onClick={(e) => deleteJob(e, job.id)} className="text-xs text-red-400 hover:text-red-600">

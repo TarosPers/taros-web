@@ -34,6 +34,14 @@ export default function AdminQuestionnairesPage() {
 
   const filtered = filter === 'all' ? items : items.filter(i => i.status === filter)
 
+  const deleteQuestionnaire = async (e: React.MouseEvent, id: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!confirm('Opravdu smazat tento dotazník?')) return
+    await supabase.from('questionnaires').delete().eq('id', id)
+    load()
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -99,9 +107,14 @@ export default function AdminQuestionnairesPage() {
                       </span>
                     </td>
                     <td className="px-5 py-3.5">
-                      <Link href={`/admin/questionnaires/${q.id}`} className="text-xs" style={{ color: '#2a4f2d' }}>
-                        Detail
-                      </Link>
+                      <div className="flex items-center gap-3">
+                        <Link href={`/admin/questionnaires/${q.id}`} className="text-xs" style={{ color: '#2a4f2d' }}>
+                          Detail
+                        </Link>
+                        <button onClick={(e) => deleteQuestionnaire(e, q.id)} className="text-xs text-red-400 hover:text-red-600">
+                          Smazat
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )

@@ -19,6 +19,7 @@ export default function EditJobPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [listingType, setListingType] = useState<'standard' | 'general'>('standard')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [imageFileDe, setImageFileDe] = useState<File | null>(null)
@@ -46,6 +47,7 @@ export default function EditJobPage({ params }: { params: { id: string } }) {
         if (data.type) {
           setSelectedTypes(data.type.split(',').map((t: string) => t.trim()))
         }
+        setListingType(data.listing_type === 'general' ? 'general' : 'standard')
       }
       setLoading(false)
     })
@@ -105,12 +107,18 @@ export default function EditJobPage({ params }: { params: { id: string } }) {
     let og_image_url_de = form.og_image_url_de
     let og_image_fb_url = form.og_image_fb_url
 
-    if (imageFile) og_image_url = await uploadImage(imageFile, 'cs') ?? og_image_url
-    if (imageFileDe) og_image_url_de = await uploadImage(imageFileDe, 'de') ?? og_image_url_de
+    if (listingType === 'standard' && imageFile) og_image_url = await uploadImage(imageFile, 'cs') ?? og_image_url
+    if (listingType === 'standard' && imageFileDe) og_image_url_de = await uploadImage(imageFileDe, 'de') ?? og_image_url_de
     if (imageFileFb) og_image_fb_url = await uploadImage(imageFileFb, 'fb') ?? og_image_fb_url
 
     const { error } = await supabase.from('jobs').update({
       ...form,
+      title_de: listingType === 'general' ? form.title_cs : form.title_de,
+      description_cs: listingType === 'general' ? '' : form.description_cs,
+      description_de: listingType === 'general' ? '' : form.description_de,
+      salary_range: listingType === 'general' ? null : form.salary_range,
+      maps_url: listingType === 'general' ? null : form.maps_url,
+      listing_type: listingType,
       type: selectedTypes.join(','),
       og_image_url,
       og_image_url_de,
@@ -134,29 +142,63 @@ export default function EditJobPage({ params }: { params: { id: string } }) {
         <h1 className="text-xl font-medium" style={{ color: '#1a1a1a' }}>Upravit inzerát</h1>
       </div>
 
+      <div className="bg-white rounded-xl border border-gray-100 p-6 mb-6">
+        <label className="form-label mb-2 block">Typ inzerátu</label>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setListingType('standard')}
+            className="text-sm px-4 py-2 rounded-lg border font-medium transition-colors"
+            style={{
+              background: listingType === 'standard' ? '#2a4f2d' : 'transparent',
+              color: listingType === 'standard' ? '#fff' : '#6b7280',
+              borderColor: listingType === 'standard' ? '#2a4f2d' : '#e5e7eb',
+            }}
+          >
+            Standardní pozice
+          </button>
+          <button
+            type="button"
+            onClick={() => setListingType('general')}
+            className="text-sm px-4 py-2 rounded-lg border font-medium transition-colors"
+            style={{
+              background: listingType === 'general' ? '#2a4f2d' : 'transparent',
+              color: listingType === 'general' ? '#fff' : '#6b7280',
+              borderColor: listingType === 'general' ? '#2a4f2d' : '#e5e7eb',
+            }}
+          >
+            Obecný inzerát
+          </button>
+        </div>
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-6">
 
         <div className="bg-white rounded-xl border border-gray-100 p-6">
           <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>Základní informace</h2>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="form-label">Název pozice (CS) *</label>
+              <label className="form-label">{listingType === 'general' ? 'Nadpis *' : 'Název pozice (CS) *'}</label>
               <input name="title_cs" value={form.title_cs} onChange={handleChange} className="form-input" required />
             </div>
-            <div>
-              <label className="form-label">Název pozice (DE) *</label>
-              <input name="title_de" value={form.title_de} onChange={handleChange} className="form-input" required />
-            </div>
+            {listingType === 'standard' && (
+              <div>
+                <label className="form-label">Název pozice (DE) *</label>
+                <input name="title_de" value={form.title_de} onChange={handleChange} className="form-input" required />
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
               <label className="form-label">Lokalita *</label>
               <input name="location" value={form.location} onChange={handleChange} className="form-input" required />
             </div>
-            <div>
-              <label className="form-label">Mzda</label>
-              <input name="salary_range" value={form.salary_range ?? ''} onChange={handleChange} className="form-input" />
-            </div>
+            {listingType === 'standard' && (
+              <div>
+                <label className="form-label">Mzda</label>
+                <input name="salary_range" value={form.salary_range ?? ''} onChange={handleChange} className="form-input" />
+              </div>
+            )}
           </div>
           <div>
             <label className="form-label mb-2 block">Typ úvazku * (lze vybrat více)</label>
@@ -178,61 +220,78 @@ export default function EditJobPage({ params }: { params: { id: string } }) {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>Fotografie & Mapa</h2>
+        {listingType === 'standard' ? (
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>Fotografie & Mapa</h2>
 
-          <div className="grid grid-cols-2 gap-6 mb-4">
-            <div>
-              <label className="form-label">Fotografie – česká verze (CS)</label>
-              <p className="text-xs text-gray-400 mb-2">Doporučeno 940×788px</p>
-              {imagePreview && (
-                <img src={imagePreview} alt="Náhled CS" className="mb-3 rounded-lg border border-gray-100 w-full" style={{ maxHeight: '160px', objectFit: 'contain', background: '#f9fafb' }} />
-              )}
-              <input type="file" accept="image/*" onChange={handleImage} className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:cursor-pointer file:bg-green-50 file:text-green-700" />
+            <div className="grid grid-cols-2 gap-6 mb-4">
+              <div>
+                <label className="form-label">Fotografie – česká verze (CS)</label>
+                <p className="text-xs text-gray-400 mb-2">Doporučeno 940×788px</p>
+                {imagePreview && (
+                  <img src={imagePreview} alt="Náhled CS" className="mb-3 rounded-lg border border-gray-100 w-full" style={{ maxHeight: '160px', objectFit: 'contain', background: '#f9fafb' }} />
+                )}
+                <input type="file" accept="image/*" onChange={handleImage} className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:cursor-pointer file:bg-green-50 file:text-green-700" />
+              </div>
+              <div>
+                <label className="form-label">Fotografie – německá verze (DE)</label>
+                <p className="text-xs text-gray-400 mb-2">Pokud není vyplněno, použije se CS obrázek</p>
+                {imagePreviewDe && (
+                  <img src={imagePreviewDe} alt="Náhled DE" className="mb-3 rounded-lg border border-gray-100 w-full" style={{ maxHeight: '160px', objectFit: 'contain', background: '#f9fafb' }} />
+                )}
+                <input type="file" accept="image/*" onChange={handleImageDe} className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:cursor-pointer file:bg-green-50 file:text-green-700" />
+              </div>
             </div>
-            <div>
-              <label className="form-label">Fotografie – německá verze (DE)</label>
-              <p className="text-xs text-gray-400 mb-2">Pokud není vyplněno, použije se CS obrázek</p>
-              {imagePreviewDe && (
-                <img src={imagePreviewDe} alt="Náhled DE" className="mb-3 rounded-lg border border-gray-100 w-full" style={{ maxHeight: '160px', objectFit: 'contain', background: '#f9fafb' }} />
+
+            <div className="mb-4">
+              <label className="form-label">Fotografie pro Facebook / sdílení (1200×630px)</label>
+              <p className="text-xs text-gray-400 mb-2">Optimální rozměr pro sdílení na sociálních sítích. Pokud není vyplněno, použije se CS obrázek.</p>
+              {imagePreviewFb && (
+                <img src={imagePreviewFb} alt="Náhled FB" className="mb-3 rounded-lg border border-gray-100 w-full" style={{ maxHeight: '160px', objectFit: 'contain', background: '#f9fafb' }} />
               )}
-              <input type="file" accept="image/*" onChange={handleImageDe} className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:cursor-pointer file:bg-green-50 file:text-green-700" />
+              <input type="file" accept="image/*" onChange={handleImageFb} className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:cursor-pointer file:bg-green-50 file:text-green-700" />
+            </div>
+
+            <div>
+              <label className="form-label">Odkaz na mapu (Google Maps URL)</label>
+              <input name="maps_url" value={form.maps_url ?? ''} onChange={handleChange} className="form-input" placeholder="https://maps.google.com/?q=Regen,DE" />
+              <p className="text-xs text-gray-400 mt-1">Otevřete Google Maps, najděte místo, klikněte Sdílet → zkopírujte odkaz</p>
             </div>
           </div>
-
-          <div className="mb-4">
-            <label className="form-label">Fotografie pro Facebook / sdílení (1200×630px)</label>
-            <p className="text-xs text-gray-400 mb-2">Optimální rozměr pro sdílení na sociálních sítích. Pokud není vyplněno, použije se CS obrázek.</p>
-            {imagePreviewFb && (
-              <img src={imagePreviewFb} alt="Náhled FB" className="mb-3 rounded-lg border border-gray-100 w-full" style={{ maxHeight: '160px', objectFit: 'contain', background: '#f9fafb' }} />
-            )}
-            <input type="file" accept="image/*" onChange={handleImageFb} className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:cursor-pointer file:bg-green-50 file:text-green-700" />
+        ) : (
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>Fotografie</h2>
+            <div>
+              <label className="form-label">Fotografie pro Facebook / sdílení (1200×630px)</label>
+              {imagePreviewFb && (
+                <img src={imagePreviewFb} alt="Náhled FB" className="mb-3 rounded-lg border border-gray-100 w-full" style={{ maxHeight: '160px', objectFit: 'contain', background: '#f9fafb' }} />
+              )}
+              <input type="file" accept="image/*" onChange={handleImageFb} className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:cursor-pointer file:bg-green-50 file:text-green-700" />
+            </div>
           </div>
+        )}
 
-          <div>
-            <label className="form-label">Odkaz na mapu (Google Maps URL)</label>
-            <input name="maps_url" value={form.maps_url ?? ''} onChange={handleChange} className="form-input" placeholder="https://maps.google.com/?q=Regen,DE" />
-            <p className="text-xs text-gray-400 mt-1">Otevřete Google Maps, najděte místo, klikněte Sdílet → zkopírujte odkaz</p>
-          </div>
-        </div>
+        {listingType === 'standard' && (
+          <>
+            <div className="bg-white rounded-xl border border-gray-100 p-6">
+              <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>Popis – česky</h2>
+              <RichEditor
+                value={form.description_cs}
+                onChange={(val) => setForm(prev => ({ ...prev, description_cs: val }))}
+                placeholder="Popis pracovní pozice v češtině..."
+              />
+            </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>Popis – česky</h2>
-          <RichEditor
-            value={form.description_cs}
-            onChange={(val) => setForm(prev => ({ ...prev, description_cs: val }))}
-            placeholder="Popis pracovní pozice v češtině..."
-          />
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>Beschreibung – Deutsch</h2>
-          <RichEditor
-            value={form.description_de}
-            onChange={(val) => setForm(prev => ({ ...prev, description_de: val }))}
-            placeholder="Stellenbeschreibung auf Deutsch..."
-          />
-        </div>
+            <div className="bg-white rounded-xl border border-gray-100 p-6">
+              <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>Beschreibung – Deutsch</h2>
+              <RichEditor
+                value={form.description_de}
+                onChange={(val) => setForm(prev => ({ ...prev, description_de: val }))}
+                placeholder="Stellenbeschreibung auf Deutsch..."
+              />
+            </div>
+          </>
+        )}
 
         <div className="bg-white rounded-xl border border-gray-100 p-6">
           <label className="flex items-center gap-3 cursor-pointer">
