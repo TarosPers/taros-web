@@ -222,20 +222,69 @@ export async function POST(req: NextRequest) {
 
     await appendToSheet(data, profese)
 
-    // Popisky u admin e-mailu jsou dvojjazyčné (CS / DE) – příjemci jsou i němečtí kolegové
+// Popisky u admin e-mailu jsou dvojjazyčné (CS / DE) – příjemci jsou i němečtí kolegové
+const YES_NO: Record<string, string> = {
+  ano: 'ano / ja',
+  ne: 'ne / nein',
+}
+
+const GERMAN_LEVELS: Record<string, string> = {
+  zadna: 'žádná / keine',
+  zakladni: 'základní / Grundkenntnisse',
+  pokrocila: 'pokročilá / fortgeschritten',
+  plynula: 'plynulá / fließend',
+}
+
+const MARITAL_STATUS: Record<string, string> = {
+  svobodny: 'svobodný/á / ledig',
+  zenaty: 'ženatý/vdaná / verheiratet',
+  rozvedeny: 'rozvedený/á / geschieden',
+}
+
+const EDUCATION_LABELS: Record<string, string> = {
+  zakladni: 'Základní / Grundschule',
+  vyceni: 'Vyučení v oboru / Berufsausbildung',
+  stredni: 'Střední škola / Gymnasium/Fachoberschule',
+  vos: 'Vyšší odborná škola / Fachschule',
+  vs: 'Vysoká škola / Hochschule/Universität',
+}
+
+const PROFESE_MAP: Record<string, string> = {
+  'Automechanik': 'Kfz-Mechaniker',
+  'CNC obsluha': 'CNC-Bediener',
+  'Lakýrník': 'Lackierer',
+  'Strojník (bagr)': 'Baggerführer',
+  'Svářeč CO2, MIG, MAG (135)': 'Schweißer CO2, MIG, MAG (135)',
+  'Řidič vysokozdvižného vozíku': 'Staplerfahrer',
+  'Výrobní linka': 'Produktionslinie',
+  'Zdravotní sestra': 'Krankenpfleger/in',
+  'Brusič': 'Schleifer',
+  'Elektrikář': 'Elektriker',
+  'Skladník': 'Lagerarbeiter',
+  'Svářeč TIG, WIG (141)': 'Schweißer TIG, WIG (141)',
+  'Řidič LKW': 'LKW-Fahrer',
+  'Truhlář': 'Tischler',
+  'Zámečník': 'Schlosser',
+  'nic z výše uvedeného': 'keines der oben genannten',
+}
+
+function translateProfese(profeseCsv: string) {
+  return profeseCsv
+    .split(',')
+    .map(p => p.trim())
+    .filter(Boolean)
+    .map(p => {
+      const de = PROFESE_MAP[p]
+      return de ? `${p} / ${de}` : p
+    })
+    .join(', ')
+}
+
     const workTypeLabel = data.workType === 'pendler'
       ? 'Pendler (denní dojíždění) / Pendler (tägliches Pendeln)'
       : data.workType === 'ubytovani'
       ? 'S ubytováním / Mit Unterkunft'
       : '–'
-
-    const educationLabels: Record<string, string> = {
-      zakladni: 'Základní / Grundschule',
-      vyceni: 'Vyučení v oboru / Ausbildung im Beruf',
-      stredni: 'Střední škola / Mittelschule',
-      vos: 'Vyšší odborná škola / Fachschule',
-      vs: 'Vysoká škola / Universität',
-    }
 
     const adminHtml = emailLayout(`
       <h2 style="margin:0 0 16px;color:#1a1a1a;font-size:18px;">Nový dotazník od uchazeče / Neuer Fragebogen vom Bewerber</h2>
@@ -244,18 +293,18 @@ export async function POST(req: NextRequest) {
         ${row2('Jméno / Name', `${data.firstName} ${data.lastName}`, 'Datum narození / Geburtsdatum', data.birthDate)}
         ${row2('E-mail / E-Mail', `<a href="mailto:${data.email}" style="color:#2a4f2d;">${data.email}</a>`, 'Telefon / Telefon', data.phone)}
         ${row2('Adresa / Adresse', `${data.street}, ${data.zip} ${data.city}`, 'Národnost / Nationalität', data.nationality)}
-        ${row1('Rodinný stav / Familienstand', data.maritalStatus)}
+        ${row1('Rodinný stav / Familienstand', MARITAL_STATUS[data.maritalStatus] ?? data.maritalStatus)}
       `)}
 
       ${section('Profese a pracovní podmínky / Beruf und Arbeitsbedingungen', `
-        ${row1('Poptávané profese / Gesuchte Berufe', profese + (data.profeseJina ? ', ' + data.profeseJina : ''))}
-        ${row2('Nástup / Arbeitsbeginn', data.startDate, 'Němčina / Deutschkenntnisse', data.german)}
-        ${row2('Typ práce / Arbeitsart', workTypeLabel, 'Řidičský průkaz / Führerschein', data.drivingLicense)}
-        ${row2('Průkaz VZV / Gabelstapler-Schein', data.vzvLicense, 'Automobil / Fahrzeug', data.hasCar)}
+        ${row1('Poptávané profese / Gesuchte Berufe', translateProfese(profese) + (data.profeseJina ? ', ' + data.profeseJina : ''))}
+        ${row2('Nástup / Arbeitsbeginn', data.startDate, 'Němčina / Deutschkenntnisse', GERMAN_LEVELS[data.german] ?? data.german)}
+        ${row2('Typ práce / Arbeitsart', workTypeLabel, 'Řidičský průkaz / Führerschein', YES_NO[data.drivingLicense] ?? data.drivingLicense)}
+        ${row2('Průkaz VZV / Gabelstapler-Schein', YES_NO[data.vzvLicense] ?? data.vzvLicense, 'Automobil / Fahrzeug', YES_NO[data.hasCar] ?? data.hasCar)}
       `)}
 
       ${section('Vzdělání / Bildung', `
-        ${row2('Nejvyšší vzdělání / Höchste Bildung', educationLabels[data.education] ?? data.education, 'Základní škola / Grundschule', data.primarySchool)}
+        ${row2('Nejvyšší vzdělání / Höchste Bildung', EDUCATION_LABELS[data.education] ?? data.education, 'Základní škola / Grundschule', data.primarySchool)}
         ${row1('Škola / Obor / Schule / Fachrichtung', data.educationDetail)}
       `)}
 
