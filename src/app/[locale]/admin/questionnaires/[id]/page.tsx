@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -73,9 +74,16 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
         <span className="text-xs text-gray-400">
           {new Date(q.created_at).toLocaleDateString('cs-CZ')}
         </span>
+        <Link
+          href={`/admin/questionnaires/${params.id}/profile`}
+          className="ml-auto text-xs px-3 py-1.5 rounded-lg border font-medium"
+          style={{ borderColor: '#2a4f2d', color: '#2a4f2d' }}
+        >
+          Vygenerovat profil
+        </Link>
         <button
           onClick={deleteQuestionnaire}
-          className="ml-auto text-xs px-3 py-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50"
+          className="text-xs px-3 py-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50"
         >
           Smazat
         </button>
