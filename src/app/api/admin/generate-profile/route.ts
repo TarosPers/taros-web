@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import PizZip from 'pizzip'
 import Docxtemplater from 'docxtemplater'
-import fs from 'fs'
-import path from 'path'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -42,9 +40,13 @@ export async function POST(req: NextRequest) {
       templateData[key] = typeof fields[key] === 'string' ? fields[key] : ''
     }
 
-    const templatePath = path.join(process.cwd(), 'templates', 'qualifikationsprofil-template.docx')
-    const content = fs.readFileSync(templatePath, 'binary')
-    const zip = new PizZip(content)
+    const templateUrl = new URL('/templates/qualifikationsprofil-template.docx', req.url)
+    const templateRes = await fetch(templateUrl)
+    if (!templateRes.ok) {
+      return NextResponse.json({ error: 'Šablona nenalezena' }, { status: 500 })
+    }
+    const arrayBuffer = await templateRes.arrayBuffer()
+    const zip = new PizZip(Buffer.from(arrayBuffer))
     const doc = new Docxtemplater(zip, {
       paragraphLoop: true,
       linebreaks: true,
