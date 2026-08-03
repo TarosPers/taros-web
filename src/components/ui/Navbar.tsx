@@ -69,8 +69,8 @@ export default function Navbar() {
             {locale === 'de' ? 'Fragebogen' : 'Dotazník'}
           </Link>
           <div className="flex items-center gap-1 ml-2">
-            <button onClick={() => switchLocale('cs')} className="text-xs px-2.5 py-1 rounded-md border transition-colors" style={{ background: locale === 'cs' ? '#2a4f2d' : 'transparent', color: locale === 'cs' ? '#fff' : '#6b7280', borderColor: locale === 'cs' ? '#2a4f2d' : '#d1d5db' }}>CS</button>
-            <button onClick={() => switchLocale('de')} className="text-xs px-2.5 py-1 rounded-md border transition-colors" style={{ background: locale === 'de' ? '#2a4f2d' : 'transparent', color: locale === 'de' ? '#fff' : '#6b7280', borderColor: locale === 'de' ? '#2a4f2d' : '#d1d5db' }}>DE</button>
+            <button onClick={() => switchLocale('cs')} className="text-xs px-2.5 py-1 rounded-md border transition-colors" style={{ background: locale === 'cs' ? '#2a4f2d' : 'transparent', color: locale === 'cs' ? '#fff' : '#6b7280', borderColor: locale === 'cs' ? '#2a4f2d' : '#d1d5db' }}>🇨🇿 CS</button>
+            <button onClick={() => switchLocale('de')} className="text-xs px-2.5 py-1 rounded-md border transition-colors" style={{ background: locale === 'de' ? '#2a4f2d' : 'transparent', color: locale === 'de' ? '#fff' : '#6b7280', borderColor: locale === 'de' ? '#2a4f2d' : '#d1d5db' }}>🇩🇪 DE</button>
           </div>
         </div>
 
@@ -112,8 +112,8 @@ export default function Navbar() {
             )
           )}
           <div className="flex gap-2 pt-2 border-t border-gray-100">
-            <button onClick={() => switchLocale('cs')} className="text-xs px-3 py-1.5 rounded-md border transition-colors" style={{ background: locale === 'cs' ? '#2a4f2d' : 'transparent', color: locale === 'cs' ? '#fff' : '#6b7280', borderColor: locale === 'cs' ? '#2a4f2d' : '#d1d5db' }}>CS</button>
-            <button onClick={() => switchLocale('de')} className="text-xs px-3 py-1.5 rounded-md border transition-colors" style={{ background: locale === 'de' ? '#2a4f2d' : 'transparent', color: locale === 'de' ? '#fff' : '#6b7280', borderColor: locale === 'de' ? '#2a4f2d' : '#d1d5db' }}>DE</button>
+            <button onClick={() => switchLocale('cs')} className="text-xs px-3 py-1.5 rounded-md border transition-colors" style={{ background: locale === 'cs' ? '#2a4f2d' : 'transparent', color: locale === 'cs' ? '#fff' : '#6b7280', borderColor: locale === 'cs' ? '#2a4f2d' : '#d1d5db' }}>🇨🇿 CS</button>
+            <button onClick={() => switchLocale('de')} className="text-xs px-3 py-1.5 rounded-md border transition-colors" style={{ background: locale === 'de' ? '#2a4f2d' : 'transparent', color: locale === 'de' ? '#fff' : '#6b7280', borderColor: locale === 'de' ? '#2a4f2d' : '#d1d5db' }}>🇩🇪 DE</button>
           </div>
         </div>
       )}
