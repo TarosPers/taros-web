@@ -37,6 +37,7 @@ export default async function HomePage() {
       <main className="max-w-7xl mx-auto">
         <HeroBanner locale={locale} />
         <JobsSection jobs={jobs ?? []} />
+        <QuestionnaireBanner locale={locale} />
         <HowItWorksSection />
         <CtaBand />
         <ContactSection />
@@ -80,6 +81,37 @@ function JobsSection({ jobs }: { jobs: any[] }) {
       >
         {t('allJobs')}
       </a>
+    </section>
+  )
+}
+
+function QuestionnaireBanner({ locale }: { locale: string }) {
+  const t = useTranslations('questionnaireBanner')
+  const dotaznikHref = locale === 'de' ? '/de/dotaznik' : '/dotaznik'
+
+  return (
+    <section className="px-4 sm:px-8 py-8 border-b border-gray-100">
+      <div
+        className="rounded-2xl px-6 sm:px-8 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
+        style={{ background: '#eaf3e8', border: '1px solid rgba(42, 79, 45, 0.12)' }}
+      >
+        <div>
+          <div className="text-xs font-medium mb-2 tracking-wide uppercase" style={{ color: '#e07b0a' }}>
+            {t('eyebrow')}
+          </div>
+          <h3 className="text-xl font-medium mb-1" style={{ color: '#1e3d21' }}>
+            {t('title')}
+          </h3>
+          <p className="text-sm text-gray-600">{t('subtitle')}</p>
+        </div>
+        <a
+          href={dotaznikHref}
+          className="shrink-0 inline-flex items-center justify-center rounded-lg text-sm font-medium px-6 py-3 transition-colors"
+          style={{ background: '#e07b0a', color: '#fff' }}
+        >
+          {t('cta')}
+        </a>
+      </div>
     </section>
   )
 }

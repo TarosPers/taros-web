@@ -49,6 +49,12 @@
     "shareOnFacebook": "Sdílet na Facebooku",
     "allJobs": "Zobrazit všechny pozice →"
   },
+  "questionnaireBanner": {
+    "eyebrow": "Nenašli jste svou pozici?",
+    "title": "Hledáte jinou pracovní pozici?",
+    "subtitle": "Vyplňte dotazník a my Vám práci najdeme.",
+    "cta": "Vyplnit dotazník"
+  },
   "howItWorks": {
     "sectionLabel": "Jak to funguje",
     "title": "Od registrace k zaměstnání",
