@@ -1,4 +1,4 @@
-import { getLocale } from 'next-intl/server'
+import { getLocale, getTranslations } from 'next-intl/server'
 import type { Metadata } from 'next'
 import Navbar from '@/components/ui/Navbar'
 import JobCard from '@/components/jobs/JobCard'
@@ -17,6 +17,7 @@ export async function generateMetadata({
 
 export default async function JobsPage() {
   const locale = await getLocale()
+  const t = await getTranslations('questionnaireBanner')
 
   const { data: jobs } = await supabase
     .from('jobs')
@@ -26,6 +27,7 @@ export default async function JobsPage() {
     .order('created_at', { ascending: false })
 
   const allJobs = jobs ?? []
+  const dotaznikHref = locale === 'de' ? '/de/dotaznik' : '/dotaznik'
 
   return (
     <>
@@ -64,6 +66,31 @@ export default async function JobsPage() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Banner - Dotazník CTA */}
+        <div className="px-4 sm:px-8 pb-12">
+          <div
+            className="rounded-2xl px-6 sm:px-8 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
+            style={{ background: '#eaf3e8', border: '1px solid rgba(42, 79, 45, 0.12)' }}
+          >
+            <div>
+              <div className="text-xs font-medium mb-2 tracking-wide uppercase" style={{ color: '#e07b0a' }}>
+                {t('eyebrow')}
+              </div>
+              <h3 className="text-xl font-medium mb-1" style={{ color: '#1e3d21' }}>
+                {t('title')}
+              </h3>
+              <p className="text-sm text-gray-600">{t('subtitle')}</p>
+            </div>
+            <a
+              href={dotaznikHref}
+              className="shrink-0 inline-flex items-center justify-center rounded-lg text-sm font-medium px-6 py-3 transition-colors"
+              style={{ background: '#e07b0a', color: '#fff' }}
+            >
+              {t('cta')}
+            </a>
+          </div>
         </div>
 
       </main>
