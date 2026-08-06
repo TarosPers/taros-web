@@ -31,8 +31,8 @@ function withFixedPrefix(key: string, value: string): string {
   return value ? `${prefix} ${value}` : prefix
 }
 
-// Odstraní diakritiku (ř, ě, š, č, ž, ...) - HTTP hlavičky (Content-Disposition)
-// podporují jen Latin-1 znaky, takže název souboru s diakritikou by shodil request.
+// Odstraní diakritiku (ř, ě, š, č, ž, ...) - použije se jen jako ASCII fallback
+// v Content-Disposition hlavičce pro starší prohlížeče/klienty.
 function stripDiacritics(text: string): string {
   return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
@@ -77,18 +77,18 @@ export async function POST(req: NextRequest) {
 
     const buf = doc.getZip().generate({ type: 'nodebuffer' })
 
-    // Jméno souboru bez diakritiky - jinak HTTP hlavička Content-Disposition
-    // shodí request s TypeError (Latin-1 only).
-    const safeName =
-      stripDiacritics(`${templateData.nachname}_${templateData.vorname}`)
-        .trim()
-        .replace(/\s+/g, '_') || 'profil'
-    const filename = `Qualifikationsprofil_${safeName}.docx`
+    // Název souboru bez prefixu "Qualifikationsprofil_", jen jméno a příjmení.
+    // Diakritika (ř, ě, š...) se v HTTP hlavičkách musí poslat speciálně (RFC 5987) -
+    // filename je ASCII fallback pro starší klienty, filename* je plná UTF-8 verze,
+    // kterou moderní prohlížeče použijí přednostně a zobrazí správně "Kopecká_Kateřina.docx".
+    const rawName = `${templateData.nachname}_${templateData.vorname}`.trim().replace(/\s+/g, '_') || 'profil'
+    const asciiFallback = stripDiacritics(rawName) || 'profil'
+    const filename = `${rawName}.docx`
 
     return new NextResponse(new Uint8Array(buf), {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Disposition': `attachment; filename="${asciiFallback}.docx"; filename*=UTF-8''${encodeURIComponent(filename)}`,
       },
     })
   } catch (err) {
