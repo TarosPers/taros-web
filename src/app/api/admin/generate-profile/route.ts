@@ -18,6 +18,19 @@ const TEMPLATE_FIELDS = [
   'job3_von_bis', 'job3_firma', 'job3_taetigkeit',
 ] as const
 
+// Pevné předvyplněné texty - vždy se připojí před hodnotu z dotazníku
+const FIXED_PREFIXES: Partial<Record<(typeof TEMPLATE_FIELDS)[number], string>> = {
+  schule_name: 'Grundschule',
+  schule_abschluss: 'Mittelschulabschluss',
+  ausbildung_firma: 'Berufschule',
+}
+
+function withFixedPrefix(key: string, value: string): string {
+  const prefix = FIXED_PREFIXES[key as keyof typeof FIXED_PREFIXES]
+  if (!prefix) return value
+  return value ? `${prefix} ${value}` : prefix
+}
+
 export async function POST(req: NextRequest) {
   try {
     // Ověření, že požadavek přišel od přihlášeného admina
@@ -37,7 +50,8 @@ export async function POST(req: NextRequest) {
     // Sestavit data pro šablonu - chybějící pole = prázdný text, žádná pole nejsou povinná
     const templateData: Record<string, string> = {}
     for (const key of TEMPLATE_FIELDS) {
-      templateData[key] = typeof fields[key] === 'string' ? fields[key] : ''
+      const rawValue = typeof fields[key] === 'string' ? fields[key] : ''
+      templateData[key] = withFixedPrefix(key, rawValue)
     }
 
     const templateUrl = new URL('/templates/qualifikationsprofil-template.docx', req.url)
