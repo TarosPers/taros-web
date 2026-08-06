@@ -18,6 +18,25 @@ const TEMPLATE_FIELDS = [
   'job3_von_bis', 'job3_firma', 'job3_taetigkeit',
 ] as const
 
+// Pevné předvyplněné texty - vždy se připojí před hodnotu z dotazníku
+const FIXED_PREFIXES: Partial<Record<(typeof TEMPLATE_FIELDS)[number], string>> = {
+  schule_name: 'Grundschule',
+  schule_abschluss: 'Mittelschulabschluss',
+  ausbildung_firma: 'Berufschule',
+}
+
+function withFixedPrefix(key: string, value: string): string {
+  const prefix = FIXED_PREFIXES[key as keyof typeof FIXED_PREFIXES]
+  if (!prefix) return value
+  return value ? `${prefix} ${value}` : prefix
+}
+
+// Odstraní diakritiku (ř, ě, š, č, ž, ...) - použije se jen jako ASCII fallback
+// v Content-Disposition hlavičce pro starší prohlížeče/klienty.
+function stripDiacritics(text: string): string {
+  return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
 export async function POST(req: NextRequest) {
   try {
     // Ověření, že požadavek přišel od přihlášeného admina
@@ -37,7 +56,8 @@ export async function POST(req: NextRequest) {
     // Sestavit data pro šablonu - chybějící pole = prázdný text, žádná pole nejsou povinná
     const templateData: Record<string, string> = {}
     for (const key of TEMPLATE_FIELDS) {
-      templateData[key] = typeof fields[key] === 'string' ? fields[key] : ''
+      const rawValue = typeof fields[key] === 'string' ? fields[key] : ''
+      templateData[key] = withFixedPrefix(key, rawValue)
     }
 
     const templateUrl = new URL('/templates/qualifikationsprofil-template.docx', req.url)
@@ -56,13 +76,19 @@ export async function POST(req: NextRequest) {
     doc.render(templateData)
 
     const buf = doc.getZip().generate({ type: 'nodebuffer' })
-    const safeName = `${templateData.nachname}_${templateData.vorname}`.trim().replace(/\s+/g, '_') || 'profil'
-    const filename = `Qualifikationsprofil_${safeName}.docx`
+
+    // Název souboru bez prefixu "Qualifikationsprofil_", jen jméno a příjmení.
+    // Diakritika (ř, ě, š...) se v HTTP hlavičkách musí poslat speciálně (RFC 5987) -
+    // filename je ASCII fallback pro starší klienty, filename* je plná UTF-8 verze,
+    // kterou moderní prohlížeče použijí přednostně a zobrazí správně "Kopecká_Kateřina.docx".
+    const rawName = `${templateData.nachname}_${templateData.vorname}`.trim().replace(/\s+/g, '_') || 'profil'
+    const asciiFallback = stripDiacritics(rawName) || 'profil'
+    const filename = `${rawName}.docx`
 
     return new NextResponse(new Uint8Array(buf), {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Disposition': `attachment; filename="${asciiFallback}.docx"; filename*=UTF-8''${encodeURIComponent(filename)}`,
       },
     })
   } catch (err) {
