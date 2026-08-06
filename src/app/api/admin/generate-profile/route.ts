@@ -31,6 +31,12 @@ function withFixedPrefix(key: string, value: string): string {
   return value ? `${prefix} ${value}` : prefix
 }
 
+// Odstraní diakritiku (ř, ě, š, č, ž, ...) - HTTP hlavičky (Content-Disposition)
+// podporují jen Latin-1 znaky, takže název souboru s diakritikou by shodil request.
+function stripDiacritics(text: string): string {
+  return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
 export async function POST(req: NextRequest) {
   try {
     // Ověření, že požadavek přišel od přihlášeného admina
@@ -70,7 +76,13 @@ export async function POST(req: NextRequest) {
     doc.render(templateData)
 
     const buf = doc.getZip().generate({ type: 'nodebuffer' })
-    const safeName = `${templateData.nachname}_${templateData.vorname}`.trim().replace(/\s+/g, '_') || 'profil'
+
+    // Jméno souboru bez diakritiky - jinak HTTP hlavička Content-Disposition
+    // shodí request s TypeError (Latin-1 only).
+    const safeName =
+      stripDiacritics(`${templateData.nachname}_${templateData.vorname}`)
+        .trim()
+        .replace(/\s+/g, '_') || 'profil'
     const filename = `Qualifikationsprofil_${safeName}.docx`
 
     return new NextResponse(new Uint8Array(buf), {
