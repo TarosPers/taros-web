@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,6 +19,7 @@ const t = {
     delete: 'Smazat dotazník',
     deleting: 'Mažu...',
     confirmDelete: 'Opravdu smazat tento dotazník? Tuto akci nelze vrátit zpět.',
+    generateProfile: 'Vygenerovat profil',
     status: 'Stav',
     notes: 'Interní poznámky',
     notesPlaceholder: 'Poznámky viditelné pouze v administraci...',
@@ -49,6 +51,7 @@ const t = {
     delete: 'Fragebogen löschen',
     deleting: 'Lösche...',
     confirmDelete: 'Diesen Fragebogen wirklich löschen? Dies kann nicht rückgängig gemacht werden.',
+    generateProfile: 'Profil generieren',
     status: 'Status',
     notes: 'Interne Notizen',
     notesPlaceholder: 'Notizen nur in der Verwaltung sichtbar...',
@@ -139,15 +142,34 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
           <h1 className="text-xl font-medium" style={{ color: '#1a1a1a' }}>
             {data.first_name} {data.last_name}
           </h1>
+          <span className="text-xs text-gray-400">
+            {new Date(data.created_at).toLocaleDateString('cs-CZ')}
+          </span>
         </div>
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          className="text-xs px-3 py-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-60"
-        >
-          {deleting ? tr.deleting : tr.delete}
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            href={`/admin/questionnaires/${params.id}/profile`}
+            className="text-xs px-3 py-1.5 rounded-lg border font-medium"
+            style={{ borderColor: '#2a4f2d', color: '#2a4f2d' }}
+          >
+            {tr.generateProfile}
+          </Link>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="text-xs px-3 py-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-60"
+          >
+            {deleting ? tr.deleting : tr.delete}
+          </button>
+        </div>
       </div>
+
+      {/* Foto */}
+      {data.foto_url && (
+        <div className="mb-4">
+          <img src={data.foto_url} alt="Foto" className="w-24 h-24 rounded-xl object-cover border border-gray-100" />
+        </div>
+      )}
 
       <div className="space-y-4">
 

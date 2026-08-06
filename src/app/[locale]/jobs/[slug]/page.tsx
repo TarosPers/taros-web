@@ -32,6 +32,7 @@ export default async function JobDetailPage({ params }: Props) {
     .select('*')
     .eq('slug', slug)
     .eq('active', true)
+    .eq('listing_type', 'standard')
     .single()
 
   if (!job) notFound()

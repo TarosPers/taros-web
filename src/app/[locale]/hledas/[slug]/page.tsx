@@ -35,14 +35,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-const typeLabels: Record<string, string> = {
-  fulltime: 'Plný úvazek',
-  parttime: 'Zkrácený úvazek',
-  temporary: 'Dočasný',
+const typeLabels: Record<string, Record<string, string>> = {
+  fulltime: { cs: 'Plný úvazek', de: 'Vollzeit' },
+  parttime: { cs: 'Zkrácený úvazek', de: 'Teilzeit' },
+  temporary: { cs: 'Dočasný', de: 'Zeitarbeit' },
 }
 
 export default async function GeneralJobPage({ params }: Props) {
-  const { slug } = await params
+  const { locale, slug } = await params
 
   const { data: job } = await supabase
     .from('jobs')
@@ -55,6 +55,7 @@ export default async function GeneralJobPage({ params }: Props) {
   if (!job) notFound()
 
   const types = (job.type ?? '').split(',').filter(Boolean)
+  const dotaznikHref = locale === 'de' ? '/de/dotaznik' : '/dotaznik'
 
   return (
     <>
@@ -78,28 +79,29 @@ export default async function GeneralJobPage({ params }: Props) {
               >
                 📍 {job.location}
               </span>
-              {types.map((t: string) => (
+              {types.map((type: string) => (
                 <span
-                  key={t}
+                  key={type}
                   className="text-sm px-3 py-1.5 rounded-full"
                   style={{ background: '#eaf3e8', color: '#2a4f2d' }}
                 >
-                  {typeLabels[t] ?? t}
+                  {typeLabels[type]?.[locale === 'de' ? 'de' : 'cs'] ?? type}
                 </span>
               ))}
             </div>
 
             <p className="text-sm mb-8" style={{ color: '#374151', lineHeight: 1.7 }}>
-              Hledáme šikovné lidi na různé pozice v Německu. Nevíte přesně, co by Vám sedělo?
-              Vyplňte krátký dotazník – zjistíme, jaká práce se pro Vás nejlépe hodí, a ozveme se Vám do 48 hodin.
+              {locale === 'de'
+                ? 'Wir suchen motivierte Mitarbeiter für verschiedene Positionen in Deutschland. Nicht sicher, was zu Ihnen passt? Füllen Sie den kurzen Fragebogen aus – wir finden die passende Stelle für Sie und melden uns innerhalb von 48 Stunden.'
+                : 'Hledáme šikovné lidi na různé pozice v Německu. Nevíte přesně, co by Vám sedělo? Vyplňte krátký dotazník – zjistíme, jaká práce se pro Vás nejlépe hodí, a ozveme se Vám do 48 hodin.'}
             </p>
 
             <a
-              href="/dotaznik"
+              href={dotaznikHref}
               className="inline-flex items-center justify-center w-full sm:w-auto px-8 py-3.5 rounded-lg text-sm font-medium text-white"
               style={{ background: '#e07b0a' }}
             >
-              Vyplnit dotazník →
+              {locale === 'de' ? 'Fragebogen ausfüllen →' : 'Vyplnit dotazník →'}
             </a>
           </div>
         </div>

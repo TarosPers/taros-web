@@ -64,3 +64,11 @@ create policy "anon_insert_applicants" on public.applicants
 insert into public.jobs (slug, title_cs, title_de, description_cs, description_de, location, salary_range, type, sector) values
   ('skladnik-regen', 'Skladník', 'Lagerarbeiter', '<p>Hledáme skladníka pro práci v Regenu.</p>', '<p>Wir suchen einen Lagerarbeiter in Regen.</p>', 'Regen, DE', 'od 14 €/h', 'fulltime', 'logistics'),
   ('ridic-vzv-waldkirchen', 'Řidič VZV', 'Staplerfahrer', '<p>Hledáme řidiče vysokozdvižného vozíku.</p>', '<p>Wir suchen einen Staplerfahrer.</p>', 'Waldkirchen, DE', 'od 16 €/h', 'fulltime', 'logistics');
+
+-- =============================================
+-- MIGRACE: listing_type (standardní pozice / obecný inzerát)
+-- Spustit ručně v Supabase SQL editoru
+-- =============================================
+alter table public.jobs
+  add column if not exists listing_type text not null default 'standard'
+  check (listing_type in ('standard', 'general'));

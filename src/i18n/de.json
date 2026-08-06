@@ -49,6 +49,12 @@
     "shareOnFacebook": "Auf Facebook teilen",
     "allJobs": "Alle Stellen anzeigen →"
   },
+  "questionnaireBanner": {
+    "eyebrow": "Nichts Passendes gefunden?",
+    "title": "Suchen Sie eine andere Stelle?",
+    "subtitle": "Füllen Sie den Fragebogen aus und wir finden die passende Arbeit für Sie.",
+    "cta": "Fragebogen ausfüllen"
+  },
   "howItWorks": {
     "sectionLabel": "So funktioniert es",
     "title": "Von der Registrierung zur Anstellung",

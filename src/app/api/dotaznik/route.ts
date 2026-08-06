@@ -222,42 +222,101 @@ export async function POST(req: NextRequest) {
 
     await appendToSheet(data, profese)
 
-    const workTypeLabel = data.workType === 'pendler' ? 'Pendler (denní dojíždění)' : data.workType === 'ubytovani' ? 'S ubytováním' : '–'
-    const educationLabels: Record<string, string> = {
-      zakladni: 'Základní', vyceni: 'Vyučení v oboru', stredni: 'Střední škola',
-      vos: 'Vyšší odborná škola', vs: 'Vysoká škola',
-    }
+// Popisky u admin e-mailu jsou dvojjazyčné (CS / DE) – příjemci jsou i němečtí kolegové
+const YES_NO: Record<string, string> = {
+  ano: 'ano / ja',
+  ne: 'ne / nein',
+}
+
+const GERMAN_LEVELS: Record<string, string> = {
+  zadna: 'žádná / keine',
+  zakladni: 'základní / Grundkenntnisse',
+  pokrocila: 'pokročilá / fortgeschritten',
+  plynula: 'plynulá / fließend',
+}
+
+const MARITAL_STATUS: Record<string, string> = {
+  svobodny: 'svobodný/á / ledig',
+  zenaty: 'ženatý/vdaná / verheiratet',
+  rozvedeny: 'rozvedený/á / geschieden',
+}
+
+const EDUCATION_LABELS: Record<string, string> = {
+  zakladni: 'Základní / Grundschule',
+  vyceni: 'Vyučení v oboru / Berufsausbildung',
+  stredni: 'Střední škola / Gymnasium/Fachoberschule',
+  vos: 'Vyšší odborná škola / Fachschule',
+  vs: 'Vysoká škola / Hochschule/Universität',
+}
+
+const PROFESE_MAP: Record<string, string> = {
+  'Automechanik': 'Kfz-Mechaniker',
+  'CNC obsluha': 'CNC-Bediener',
+  'Lakýrník': 'Lackierer',
+  'Strojník (bagr)': 'Baggerführer',
+  'Svářeč CO2, MIG, MAG (135)': 'Schweißer CO2, MIG, MAG (135)',
+  'Řidič vysokozdvižného vozíku': 'Staplerfahrer',
+  'Výrobní linka': 'Produktionslinie',
+  'Zdravotní sestra': 'Krankenpfleger/in',
+  'Brusič': 'Schleifer',
+  'Elektrikář': 'Elektriker',
+  'Skladník': 'Lagerarbeiter',
+  'Svářeč TIG, WIG (141)': 'Schweißer TIG, WIG (141)',
+  'Řidič LKW': 'LKW-Fahrer',
+  'Truhlář': 'Tischler',
+  'Zámečník': 'Schlosser',
+  'nic z výše uvedeného': 'keines der oben genannten',
+}
+
+function translateProfese(profeseCsv: string) {
+  return profeseCsv
+    .split(',')
+    .map(p => p.trim())
+    .filter(Boolean)
+    .map(p => {
+      const de = PROFESE_MAP[p]
+      return de ? `${p} / ${de}` : p
+    })
+    .join(', ')
+}
+
+    const workTypeLabel = data.workType === 'pendler'
+      ? 'Pendler (denní dojíždění) / Pendler (tägliches Pendeln)'
+      : data.workType === 'ubytovani'
+      ? 'S ubytováním / Mit Unterkunft'
+      : '–'
 
     const adminHtml = emailLayout(`
-      <h2 style="margin:0 0 16px;color:#1a1a1a;font-size:18px;">Nový dotazník od uchazeče</h2>
+      <h2 style="margin:0 0 16px;color:#1a1a1a;font-size:18px;">Nový dotazník od uchazeče / Neuer Fragebogen vom Bewerber</h2>
 
-      ${section('Osobní údaje', `
-        ${row2('Jméno', `${data.firstName} ${data.lastName}`, 'Datum narození', data.birthDate)}
-        ${row2('E-mail', `<a href="mailto:${data.email}" style="color:#2a4f2d;">${data.email}</a>`, 'Telefon', data.phone)}
-        ${row2('Adresa', `${data.street}, ${data.zip} ${data.city}`, 'Národnost / Rodinný stav', `${data.nationality || '–'} / ${data.maritalStatus || '–'}`)}
+      ${section('Osobní údaje / Persönliche Daten', `
+        ${row2('Jméno / Name', `${data.firstName} ${data.lastName}`, 'Datum narození / Geburtsdatum', data.birthDate)}
+        ${row2('E-mail / E-Mail', `<a href="mailto:${data.email}" style="color:#2a4f2d;">${data.email}</a>`, 'Telefon / Telefon', data.phone)}
+        ${row2('Adresa / Adresse', `${data.street}, ${data.zip} ${data.city}`, 'Národnost / Nationalität', data.nationality)}
+        ${row1('Rodinný stav / Familienstand', MARITAL_STATUS[data.maritalStatus] ?? data.maritalStatus)}
       `)}
 
-      ${section('Profese a pracovní podmínky', `
-        ${row1('Poptávané profese', profese + (data.profeseJina ? ', ' + data.profeseJina : ''))}
-        ${row2('Nástup', data.startDate, 'Němčina', data.german)}
-        ${row2('Typ práce', workTypeLabel, 'Řidičský průkaz', data.drivingLicense)}
-        ${row2('Průkaz VZV', data.vzvLicense, 'Automobil', data.hasCar)}
+      ${section('Profese a pracovní podmínky / Beruf und Arbeitsbedingungen', `
+        ${row1('Poptávané profese / Gesuchte Berufe', translateProfese(profese) + (data.profeseJina ? ', ' + data.profeseJina : ''))}
+        ${row2('Nástup / Arbeitsbeginn', data.startDate, 'Němčina / Deutschkenntnisse', GERMAN_LEVELS[data.german] ?? data.german)}
+        ${row2('Typ práce / Arbeitsart', workTypeLabel, 'Řidičský průkaz / Führerschein', YES_NO[data.drivingLicense] ?? data.drivingLicense)}
+        ${row2('Průkaz VZV / Gabelstapler-Schein', YES_NO[data.vzvLicense] ?? data.vzvLicense, 'Automobil / Fahrzeug', YES_NO[data.hasCar] ?? data.hasCar)}
       `)}
 
-      ${section('Vzdělání', `
-        ${row2('Nejvyšší vzdělání', educationLabels[data.education] ?? data.education, 'Základní škola', data.primarySchool)}
-        ${row1('Škola / Obor', data.educationDetail)}
+      ${section('Vzdělání / Bildung', `
+        ${row2('Nejvyšší vzdělání / Höchste Bildung', EDUCATION_LABELS[data.education] ?? data.education, 'Základní škola / Grundschule', data.primarySchool)}
+        ${row1('Škola / Obor / Schule / Fachrichtung', data.educationDetail)}
       `)}
 
-      ${section('Pracovní zkušenosti', `
-        ${row1('Poslední zaměstnání', data.job1)}
-        ${row1('Předposlední zaměstnání', data.job2)}
-        ${row1('2. předposlední zaměstnání', data.job3)}
+      ${section('Pracovní zkušenosti / Berufserfahrung', `
+        ${row1('Poslední zaměstnání / Letzter Arbeitgeber', data.job1)}
+        ${row1('Předposlední zaměstnání / Vorletzter Arbeitgeber', data.job2)}
+        ${row1('2. předposlední zaměstnání / 2. Vorletzter Arbeitgeber', data.job3)}
       `)}
 
-      ${data.message ? section('Zpráva', row1('', data.message)) : ''}
+      ${data.message ? section('Zpráva / Nachricht', row1('', data.message)) : ''}
 
-      ${attachments.length > 0 ? `<p style="color:#999;font-size:11px;margin-top:12px;">📎 Přílohy: ${attachments.map(a => a.filename).join(', ')}</p>` : ''}
+      ${attachments.length > 0 ? `<p style="color:#999;font-size:11px;margin-top:12px;">📎 Přílohy / Anhänge: ${attachments.map(a => a.filename).join(', ')}</p>` : ''}
     `)
 
     // Email na adminy + Make hook
@@ -269,7 +328,7 @@ export async function POST(req: NextRequest) {
       html: adminHtml,
     })
 
-    // Potvrzovací email uchazeči
+    // Potvrzovací email uchazeči (beze změny, jen česky)
     await resend.emails.send({
       from: FROM_EMAIL,
       to: data.email,

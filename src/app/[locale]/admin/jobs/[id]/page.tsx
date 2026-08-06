@@ -48,6 +48,7 @@ export default function EditJobPage({ params }: { params: { id: string } }) {
         if (data.type) {
           setSelectedTypes(data.type.split(',').map((t: string) => t.trim()))
         }
+        setListingType(data.listing_type === 'general' ? 'general' : 'standard')
       }
       setLoading(false)
     })
@@ -144,6 +145,11 @@ export default function EditJobPage({ params }: { params: { id: string } }) {
 
     const { error } = await supabase.from('jobs').update({
       ...form,
+      title_de: form.title_de,
+      description_cs: form.description_cs,
+      description_de: form.description_de,
+      salary_range: form.salary_range,
+      maps_url: form.maps_url,
       type: selectedTypes.join(','),
       listing_type: 'standard',
       og_image_url,

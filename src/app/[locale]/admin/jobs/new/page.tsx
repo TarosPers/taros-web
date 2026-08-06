@@ -138,6 +138,11 @@ export default function NewJobPage() {
 
     const { error } = await supabase.from('jobs').insert({
       ...form,
+      title_de: form.title_de,
+      description_cs: form.description_cs,
+      description_de: form.description_de,
+      salary_range: form.salary_range,
+      maps_url: form.maps_url,
       slug,
       type: selectedTypes.join(','),
       listing_type: 'standard',
