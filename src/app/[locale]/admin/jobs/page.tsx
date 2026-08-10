@@ -37,6 +37,7 @@ const t = {
     active: 'Aktivní',
     hidden: 'Skrytý',
     edit: 'Upravit',
+    copy: 'Kopírovat',
     show: 'Zobrazit',
     delete: 'Smazat',
     confirmDelete: 'Opravdu smazat tento inzerát?',
@@ -62,6 +63,7 @@ const t = {
     active: 'Aktiv',
     hidden: 'Versteckt',
     edit: 'Bearbeiten',
+    copy: 'Kopieren',
     show: 'Anzeigen',
     delete: 'Löschen',
     confirmDelete: 'Dieses Stellenangebot wirklich löschen?',
@@ -205,6 +207,12 @@ export default function AdminJobsPage() {
                       <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
                         <Link href={`/admin/jobs/${job.id}`} className="text-xs transition-colors" style={{ color: '#2a4f2d' }}>
                           {tr.edit}
+                        </Link>
+                        <Link
+                          href={`/admin/jobs/new?copyFrom=${job.id}`}
+                          className="text-xs text-gray-400 hover:text-gray-600"
+                        >
+                          {tr.copy}
                         </Link>
                         <Link href={publicHref} className="text-xs text-gray-400 hover:text-gray-600" target="_blank">
                           {tr.show}

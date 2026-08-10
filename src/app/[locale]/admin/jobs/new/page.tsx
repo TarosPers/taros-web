@@ -1,7 +1,7 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import RichEditor from '@/components/ui/RichEditor'
 
 const supabase = createClient(
@@ -17,7 +17,11 @@ const TYPE_OPTIONS = [
 
 export default function NewJobPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const copyFromId = searchParams.get('copyFrom')
+
   const [saving, setSaving] = useState(false)
+  const [loadingCopy, setLoadingCopy] = useState(!!copyFromId)
   const [listingType, setListingType] = useState<'standard' | 'general'>('standard')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -25,6 +29,11 @@ export default function NewJobPage() {
   const [imagePreviewDe, setImagePreviewDe] = useState<string | null>(null)
   const [imageFileFb, setImageFileFb] = useState<File | null>(null)
   const [imagePreviewFb, setImagePreviewFb] = useState<string | null>(null)
+  // Existující URL fotek z kopírovaného inzerátu - použijí se, pokud admin nenahraje nový soubor
+  const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null)
+  const [existingImageUrlDe, setExistingImageUrlDe] = useState<string | null>(null)
+  const [existingImageUrlFb, setExistingImageUrlFb] = useState<string | null>(null)
+  const [copiedFromTitle, setCopiedFromTitle] = useState<string | null>(null)
   const [selectedTypes, setSelectedTypes] = useState<string[]>(['fulltime'])
   const [form, setForm] = useState({
     title_cs: '', title_de: '',
@@ -32,6 +41,32 @@ export default function NewJobPage() {
     location: '', salary_range: '',
     sector: 'other', active: true, maps_url: '',
   })
+
+  useEffect(() => {
+    if (!copyFromId) return
+    supabase.from('jobs').select('*').eq('id', copyFromId).single().then(({ data }) => {
+      if (data) {
+        setForm({
+          title_cs: data.title_cs ?? '',
+          title_de: data.title_de ?? '',
+          description_cs: data.description_cs ?? '',
+          description_de: data.description_de ?? '',
+          location: data.location ?? '',
+          salary_range: data.salary_range ?? '',
+          sector: data.sector ?? 'other',
+          active: true,
+          maps_url: data.maps_url ?? '',
+        })
+        setListingType(data.listing_type === 'general' ? 'general' : 'standard')
+        if (data.type) setSelectedTypes(data.type.split(',').map((t: string) => t.trim()))
+        if (data.og_image_url) { setExistingImageUrl(data.og_image_url); setImagePreview(data.og_image_url) }
+        if (data.og_image_url_de) { setExistingImageUrlDe(data.og_image_url_de); setImagePreviewDe(data.og_image_url_de) }
+        if (data.og_image_fb_url) { setExistingImageUrlFb(data.og_image_fb_url); setImagePreviewFb(data.og_image_fb_url) }
+        setCopiedFromTitle(data.title_cs)
+      }
+      setLoadingCopy(false)
+    })
+  }, [copyFromId])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -94,7 +129,7 @@ export default function NewJobPage() {
       alert('Vyberte alespoň jeden typ úvazku')
       return
     }
-    if (listingType === 'general' && !imageFileFb) {
+    if (listingType === 'general' && !imageFileFb && !existingImageUrlFb) {
       alert('U obecného inzerátu je fotografie pro Facebook povinná')
       return
     }
@@ -103,7 +138,7 @@ export default function NewJobPage() {
     const slug = generateSlug(form.title_cs)
 
     if (listingType === 'general') {
-      const og_image_fb_url = imageFileFb ? await uploadImage(imageFileFb, 'fb') : null
+      const og_image_fb_url = imageFileFb ? await uploadImage(imageFileFb, 'fb') : existingImageUrlFb
 
       const { error } = await supabase.from('jobs').insert({
         title_cs: form.title_cs,
@@ -132,9 +167,9 @@ export default function NewJobPage() {
       return
     }
 
-    const og_image_url = imageFile ? await uploadImage(imageFile, 'cs') : null
-    const og_image_url_de = imageFileDe ? await uploadImage(imageFileDe, 'de') : null
-    const og_image_fb_url = imageFileFb ? await uploadImage(imageFileFb, 'fb') : null
+    const og_image_url = imageFile ? await uploadImage(imageFile, 'cs') : existingImageUrl
+    const og_image_url_de = imageFileDe ? await uploadImage(imageFileDe, 'de') : existingImageUrlDe
+    const og_image_fb_url = imageFileFb ? await uploadImage(imageFileFb, 'fb') : existingImageUrlFb
 
     const { error } = await supabase.from('jobs').insert({
       ...form,
@@ -159,12 +194,22 @@ export default function NewJobPage() {
     }
   }
 
+  if (loadingCopy) {
+    return <div className="text-sm text-gray-400">Načítám data ke kopírování...</div>
+  }
+
   return (
     <div className="max-w-4xl">
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => router.back()} className="text-sm text-gray-400 hover:text-gray-600">← Zpět</button>
         <h1 className="text-xl font-medium" style={{ color: '#1a1a1a' }}>Nový inzerát</h1>
       </div>
+
+      {copiedFromTitle && (
+        <div className="rounded-lg px-4 py-2.5 mb-4 text-xs" style={{ background: '#fdf0e0', color: '#e07b0a' }}>
+          Zkopírováno z inzerátu „{copiedFromTitle}" – zkontrolujte a upravte údaje, případně vyměňte fotky.
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-gray-100 p-6 mb-6">
         <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>Typ inzerátu</h2>
@@ -266,7 +311,9 @@ export default function NewJobPage() {
             <div className="grid grid-cols-2 gap-6 mb-4">
               <div>
                 <label className="form-label">Fotografie – česká verze (CS)</label>
-                <p className="text-xs text-gray-400 mb-2">Doporučeno 940×788px</p>
+                <p className="text-xs text-gray-400 mb-2">
+                  {existingImageUrl && !imageFile ? 'Použije se zkopírovaná fotka, pokud nenahrajete novou.' : 'Doporučeno 940×788px'}
+                </p>
                 {imagePreview && (
                   <img src={imagePreview} alt="Náhled CS" className="mb-3 rounded-lg border border-gray-100 w-full" style={{ maxHeight: '160px', objectFit: 'contain', background: '#f9fafb' }} />
                 )}
@@ -274,7 +321,9 @@ export default function NewJobPage() {
               </div>
               <div>
                 <label className="form-label">Fotografie – německá verze (DE)</label>
-                <p className="text-xs text-gray-400 mb-2">Pokud není vyplněno, použije se CS obrázek</p>
+                <p className="text-xs text-gray-400 mb-2">
+                  {existingImageUrlDe && !imageFileDe ? 'Použije se zkopírovaná fotka, pokud nenahrajete novou.' : 'Pokud není vyplněno, použije se CS obrázek'}
+                </p>
                 {imagePreviewDe && (
                   <img src={imagePreviewDe} alt="Náhled DE" className="mb-3 rounded-lg border border-gray-100 w-full" style={{ maxHeight: '160px', objectFit: 'contain', background: '#f9fafb' }} />
                 )}
@@ -284,7 +333,9 @@ export default function NewJobPage() {
 
             <div className="mb-4">
               <label className="form-label">Fotografie pro Facebook / sdílení (1200×630px)</label>
-              <p className="text-xs text-gray-400 mb-2">Optimální rozměr pro sdílení na sociálních sítích. Pokud není vyplněno, použije se CS obrázek.</p>
+              <p className="text-xs text-gray-400 mb-2">
+                {existingImageUrlFb && !imageFileFb ? 'Použije se zkopírovaná fotka, pokud nenahrajete novou.' : 'Optimální rozměr pro sdílení na sociálních sítích. Pokud není vyplněno, použije se CS obrázek.'}
+              </p>
               {imagePreviewFb && (
                 <img src={imagePreviewFb} alt="Náhled FB" className="mb-3 rounded-lg border border-gray-100 w-full" style={{ maxHeight: '160px', objectFit: 'contain', background: '#f9fafb' }} />
               )}
@@ -300,11 +351,13 @@ export default function NewJobPage() {
         ) : (
           <div className="bg-white rounded-xl border border-gray-100 p-6">
             <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>Fotografie pro Facebook *</h2>
-            <p className="text-xs text-gray-400 mb-2">1200×630px – jediný obrázek u obecného inzerátu, povinný.</p>
+            <p className="text-xs text-gray-400 mb-2">
+              {existingImageUrlFb && !imageFileFb ? 'Použije se zkopírovaná fotka, pokud nenahrajete novou.' : '1200×630px – jediný obrázek u obecného inzerátu, povinný.'}
+            </p>
             {imagePreviewFb && (
               <img src={imagePreviewFb} alt="Náhled FB" className="mb-3 rounded-lg border border-gray-100 w-full" style={{ maxHeight: '160px', objectFit: 'contain', background: '#f9fafb' }} />
             )}
-            <input type="file" accept="image/*" onChange={handleImageFb} required className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:cursor-pointer file:bg-green-50 file:text-green-700" />
+            <input type="file" accept="image/*" onChange={handleImageFb} required={!existingImageUrlFb} className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:cursor-pointer file:bg-green-50 file:text-green-700" />
           </div>
         )}
 

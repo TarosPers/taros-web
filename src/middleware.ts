@@ -40,6 +40,16 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL(target, req.url), 301)
   }
 
+  // Admin sekce: jazyk textů řídí přihlášený uživatel (user_metadata.lang),
+  // ne URL prefix. Bez tohoto obejití next-intl podle jazyka prohlížeče
+  // omylem přesměruje /admin/... na /de/admin/..., což v adminu nemá
+  // žádný efekt a jen matoucím způsobem mění adresu.
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    const url = req.nextUrl.clone()
+    url.pathname = `/cs${pathname}`
+    return NextResponse.rewrite(url)
+  }
+
   return intlMiddleware(req)
 }
 
