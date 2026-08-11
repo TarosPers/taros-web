@@ -16,6 +16,7 @@ const t = {
     pages: 'Stránky',
     questionnaires: 'Dotazníky',
     redirects: 'Přesměrování',
+    shifts: 'Směny',
     users: 'Uživatelé',
     web: '← Web',
     logout: 'Odhlásit',
@@ -27,6 +28,7 @@ const t = {
     pages: 'Seiten',
     questionnaires: 'Fragebögen',
     redirects: 'Weiterleitungen',
+    shifts: 'Schichten',
     users: 'Benutzer',
     web: '← Website',
     logout: 'Abmelden',
@@ -80,6 +82,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { href: '/admin/pages',           label: tr.pages },
     { href: '/admin/questionnaires',  label: tr.questionnaires },
     { href: '/admin/redirects',       label: tr.redirects },
+    { href: '/admin/shifts',          label: tr.shifts },
     ...(isSuperadmin ? [{ href: '/admin/users', label: tr.users }] : []),
   ]
 
