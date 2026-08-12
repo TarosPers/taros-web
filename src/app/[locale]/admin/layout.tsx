@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
@@ -16,7 +16,11 @@ const t = {
     pages: 'Stránky',
     questionnaires: 'Dotazníky',
     redirects: 'Přesměrování',
-    shifts: 'Směny',
+    planning: 'Plánování',
+    planningPlan: 'Plánovat',
+    planningCompanies: 'Firmy',
+    planningWorkers: 'Zaměstnanci',
+    system: 'Systém',
     users: 'Uživatelé',
     web: '← Web',
     logout: 'Odhlásit',
@@ -28,12 +32,86 @@ const t = {
     pages: 'Seiten',
     questionnaires: 'Fragebögen',
     redirects: 'Weiterleitungen',
-    shifts: 'Schichten',
+    planning: 'Planung',
+    planningPlan: 'Planen',
+    planningCompanies: 'Unternehmen',
+    planningWorkers: 'Mitarbeiter',
+    system: 'System',
     users: 'Benutzer',
     web: '← Website',
     logout: 'Abmelden',
     loading: 'Laden...',
   },
+}
+
+function DropdownNav({
+  label,
+  items,
+  active,
+  pathname,
+}: {
+  label: string
+  items: { href: string; label: string }[]
+  active: boolean
+  pathname: string
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setOpen(false)
+  }, [pathname])
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  if (items.length === 0) return null
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(prev => !prev)}
+        className="text-sm transition-colors flex items-center gap-1"
+        style={{
+          color: active ? '#2a4f2d' : '#6b7280',
+          fontWeight: active ? 500 : 400,
+        }}
+      >
+        {label}
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
+          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && (
+        <div
+          className="absolute top-full left-0 mt-2 bg-white rounded-lg border border-gray-100 py-1.5 z-50"
+          style={{ minWidth: '160px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}
+        >
+          {items.map(({ href, label: itemLabel }) => (
+            <Link
+              key={href}
+              href={href}
+              className="block px-4 py-2 text-sm transition-colors"
+              style={{
+                color: pathname.includes(href) ? '#2a4f2d' : '#6b7280',
+                fontWeight: pathname.includes(href) ? 500 : 400,
+                background: pathname.includes(href) ? '#f2f8f1' : 'transparent',
+              }}
+            >
+              {itemLabel}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -79,12 +157,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const navItems = [
     { href: '/admin/jobs',            label: tr.jobs },
     { href: '/admin/applicants',      label: tr.applicants },
-    { href: '/admin/pages',           label: tr.pages },
     { href: '/admin/questionnaires',  label: tr.questionnaires },
     { href: '/admin/redirects',       label: tr.redirects },
-    { href: '/admin/shifts',          label: tr.shifts },
+  ]
+
+  const planningItems = [
+    { href: '/admin/shifts/plan',      label: tr.planningPlan },
+    { href: '/admin/shifts/companies', label: tr.planningCompanies },
+    { href: '/admin/shifts/workers',   label: tr.planningWorkers },
+  ]
+  const isPlanningActive = pathname.includes('/admin/shifts')
+
+  const systemItems = [
+    { href: '/admin/pages', label: tr.pages },
     ...(isSuperadmin ? [{ href: '/admin/users', label: tr.users }] : []),
   ]
+  const isSystemActive = pathname.includes('/admin/pages') || pathname.includes('/admin/users')
 
   return (
     <div className="min-h-screen" style={{ background: '#f5f5f5' }}>
@@ -109,6 +197,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   {label}
                 </Link>
               ))}
+
+              <DropdownNav label={tr.planning} items={planningItems} active={isPlanningActive} pathname={pathname} />
+              <DropdownNav label={tr.system} items={systemItems} active={isSystemActive} pathname={pathname} />
             </div>
           </div>
           <div className="flex items-center gap-4">
