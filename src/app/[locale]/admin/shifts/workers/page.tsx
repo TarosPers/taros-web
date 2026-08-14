@@ -11,8 +11,8 @@ const supabase = createClient(
 interface Worker {
   id: string
   name: string
-  note: string | null
   active: boolean
+  has_driving_license: boolean
   shift_worker_companies: { shift_companies: { id: string; name: string } | null }[]
 }
 
@@ -72,6 +72,7 @@ export default function ShiftWorkersPage() {
             <thead className="border-b border-gray-50">
               <tr>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">Jméno</th>
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">ŘP</th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">Smí pracovat ve firmách</th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-400">Stav</th>
                 <th className="px-5 py-3"></th>
@@ -85,6 +86,15 @@ export default function ShiftWorkersPage() {
                 return (
                   <tr key={worker.id} className="hover:bg-gray-50/50">
                     <td className="px-5 py-3.5 font-medium" style={{ color: '#1a1a1a' }}>{worker.name}</td>
+                    <td className="px-5 py-3.5">
+                      {worker.has_driving_license ? (
+                        <span className="text-xs" style={{ color: '#2a4f2d' }}>✓</span>
+                      ) : (
+                        <span className="text-xs px-1.5 py-0.5 rounded font-medium" style={{ background: '#fef2f2', color: '#ef4444' }}>
+                          bez ŘP
+                        </span>
+                      )}
+                    </td>
                     <td className="px-5 py-3.5 text-gray-500 text-xs">
                       {companyNames.length > 0 ? companyNames.join(', ') : '–'}
                     </td>
