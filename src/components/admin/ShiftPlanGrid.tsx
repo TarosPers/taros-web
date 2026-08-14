@@ -15,6 +15,23 @@ const SHIFT_LABELS: Record<string, string> = {
 
 const DAY_LABELS = ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So']
 
+// Barvy skupin A/B/C/D - ruční rotace, napříč celou firmou (nezávisle na provozu)
+const GROUP_COLORS: Record<string, string> = {
+  A: '#ff33cc',
+  B: '#00b0f0',
+  C: '#ffff00',
+  D: '#92d050',
+}
+const GROUP_CYCLE: (string | null)[] = [null, 'A', 'B', 'C', 'D']
+
+// Barevná rotace skupin dává smysl jen u standardních časů směn.
+// Pokud se časy provozu/firmy liší, pruh se vůbec nezobrazuje.
+const STANDARD_SHIFT_TIMES: ShiftTimes = {
+  morning:   { start: '04:00', end: '12:00' },
+  afternoon: { start: '12:00', end: '20:00' },
+  night:     { start: '20:00', end: '04:00' },
+}
+
 type ShiftTimes = Record<string, { start: string; end: string }>
 
 interface Company {
@@ -22,6 +39,7 @@ interface Company {
   name: string
   shift_types: string[]
   shift_times: ShiftTimes
+  group_rotation_locked: boolean
 }
 
 interface Department {
@@ -53,6 +71,13 @@ interface Assignment {
   created_at: string
 }
 
+interface GroupRotationRow {
+  id: string
+  date: string
+  shift_type: string
+  group_label: string
+}
+
 function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10)
 }
@@ -80,6 +105,7 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [busySet, setBusySet] = useState<Set<string>>(new Set())
   const [deptTotals, setDeptTotals] = useState<Record<string, number>>({})
+  const [groupRotation, setGroupRotation] = useState<GroupRotationRow[]>([])
   const [anchorMonday, setAnchorMonday] = useState<Date>(() => getMonday(new Date()))
 
   const days: Date[] = []
@@ -96,7 +122,6 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
 
   useEffect(() => {
     const load = async () => {
-      setLoading(true)
       const [{ data: companyData }, { data: deptData }, { data: workerLinks }] = await Promise.all([
         supabase.from('shift_companies').select('*').eq('id', companyId).single(),
         supabase.from('shift_departments').select('*').eq('company_id', companyId).eq('active', true).order('created_at'),
@@ -119,9 +144,10 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
     if (departments.length === 0) return
     const deptIds = departments.map(d => d.id)
 
-    const [{ data: reqData }, { data: allAssignments }] = await Promise.all([
+    const [{ data: reqData }, { data: allAssignments }, { data: rotationData }] = await Promise.all([
       supabase.from('shift_requirements').select('*').in('department_id', deptIds).gte('date', rangeStart).lte('date', rangeEnd),
       supabase.from('shift_assignments').select('*, shift_workers(name)').gte('date', rangeStart).lte('date', rangeEnd).order('created_at'),
+      supabase.from('shift_group_rotation').select('*').eq('company_id', companyId).gte('date', rangeStart).lte('date', rangeEnd),
     ])
 
     const totals: Record<string, number> = {}
@@ -130,6 +156,7 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
     })
     setDeptTotals(totals)
     setRequirements((reqData ?? []).filter((r: any) => r.department_id === selectedDeptId))
+    setGroupRotation(rotationData ?? [])
 
     const busy = new Set<string>()
     ;(allAssignments ?? []).forEach((a: any) => {
@@ -149,7 +176,7 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
           created_at: a.created_at,
         }))
     )
-  }, [departments, selectedDeptId, rangeStart, rangeEnd])
+  }, [departments, selectedDeptId, rangeStart, rangeEnd, companyId])
 
   useEffect(() => {
     loadRangeData()
@@ -166,6 +193,26 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
     assignments
       .filter(a => a.date === date && a.shift_type === shiftType)
       .sort((a, b) => a.created_at.localeCompare(b.created_at))
+
+  const getGroupLabel = (date: string, shiftType: string): string | null =>
+    groupRotation.find(g => g.date === date && g.shift_type === shiftType)?.group_label ?? null
+
+  const cycleGroup = async (date: string, shiftType: string) => {
+    if (company?.group_rotation_locked) return
+    const current = getGroupLabel(date, shiftType)
+    const currentIndex = GROUP_CYCLE.indexOf(current)
+    const next = GROUP_CYCLE[(currentIndex + 1) % GROUP_CYCLE.length]
+    const existing = groupRotation.find(g => g.date === date && g.shift_type === shiftType)
+
+    if (!next) {
+      if (existing) await supabase.from('shift_group_rotation').delete().eq('id', existing.id)
+    } else if (existing) {
+      await supabase.from('shift_group_rotation').update({ group_label: next }).eq('id', existing.id)
+    } else {
+      await supabase.from('shift_group_rotation').insert({ company_id: companyId, date, shift_type: shiftType, group_label: next })
+    }
+    loadRangeData()
+  }
 
   const updateRequirement = async (date: string, shiftType: string, count: number) => {
     if (!selectedDeptId) return
@@ -225,12 +272,39 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
     })
   }
 
+  const toggleLock = async () => {
+    if (!company) return
+    const newLocked = !company.group_rotation_locked
+    await supabase.from('shift_companies').update({ group_rotation_locked: newLocked }).eq('id', companyId)
+    setCompany(prev => prev ? { ...prev, group_rotation_locked: newLocked } : prev)
+  }
+
   if (loading) return <div className="text-sm text-gray-400">Načítám...</div>
   if (!company) return <div className="text-sm text-gray-400">Firma nenalezena</div>
 
   return (
     <div>
-      <div className="flex items-center justify-end mb-4">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-xs text-gray-400">Skupina:</span>
+          {(['A', 'B', 'C', 'D'] as const).map(g => (
+            <span key={g} className="flex items-center gap-1 text-xs text-gray-500">
+              <span className="rounded-sm" style={{ width: '10px', height: '10px', background: GROUP_COLORS[g] }} />
+              {g}
+            </span>
+          ))}
+          <button
+            onClick={toggleLock}
+            title={company.group_rotation_locked ? 'Rotace je uzamčena - kliknutím odemknete' : 'Rotace je odemčena - kliknutím uzamknete'}
+            className="text-sm px-2 py-1 rounded-lg border transition-colors"
+            style={{
+              borderColor: company.group_rotation_locked ? '#ef4444' : '#e5e7eb',
+              background: company.group_rotation_locked ? '#fef2f2' : 'transparent',
+            }}
+          >
+            {company.group_rotation_locked ? '🔒' : '🔓'}
+          </button>
+        </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => { const d = new Date(anchorMonday); d.setDate(d.getDate() - 7); setAnchorMonday(d) }}
@@ -252,7 +326,7 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
 
       {departments.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-          <p className="text-gray-400 text-sm">Nejdřív založte alespoň jeden provoz pro tuto firmu.</p>
+          <p className="text-gray-400 text-sm">Nejdřív založte alespoň jeden provoz.</p>
         </div>
       ) : (
         <>
@@ -303,55 +377,105 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
                 <tbody>
                   {shiftTypes.map((shiftType) => {
                     const times = shiftTimesForDept[shiftType]
+                    const isKristallGlas = company?.name === 'KristallGlas'
+                    const isStandardTimes = !!times
+                      && times.start === STANDARD_SHIFT_TIMES[shiftType]?.start
+                      && times.end === STANDARD_SHIFT_TIMES[shiftType]?.end
+                    const showGroupBar = isKristallGlas && isStandardTimes
+                    const isLocked = !!company?.group_rotation_locked
                     return (
                       <tr key={shiftType} className="border-b border-gray-50 align-top">
                         <td className="px-1.5 py-2">
                           <div className="font-medium" style={{ color: '#1a1a1a' }}>{SHIFT_LABELS[shiftType] ?? shiftType}</div>
                           {times && <div className="text-gray-400" style={{ fontSize: '10px' }}>{times.start}-{times.end}</div>}
                         </td>
-                        {days.map((d) => {
+                        {days.map((d, dayIndex) => {
                           const date = formatDate(d)
+                          const isReadOnly = dayIndex === 0 // neděle z předchozího týdne - jen pro čtení
                           const req = getRequirement(date, shiftType)
                           const requiredCount = req?.required_count ?? 0
                           const cellAssignments = getAssignmentsFor(date, shiftType)
                           const numSlots = Math.max(requiredCount, cellAssignments.length)
+                          const groupLabel = getGroupLabel(date, shiftType)
 
                           return (
-                            <td key={`${date}|${shiftType}`} className="px-1 py-2 border-l border-gray-50 align-top">
-                              <div className="flex items-center gap-1 mb-1.5">
-                                <input
-                                  type="number"
-                                  min={0}
-                                  defaultValue={requiredCount}
-                                  onBlur={(e) => updateRequirement(date, shiftType, parseInt(e.target.value) || 0)}
-                                  className="border border-gray-200 rounded text-center"
-                                  style={{ width: '32px', fontSize: '11px', padding: '1px' }}
-                                  title="Potřeba míst"
-                                />
-                                <span className="text-gray-400" style={{ fontSize: '10px' }}>
-                                  ({cellAssignments.length}/{requiredCount})
-                                </span>
-                              </div>
-                              <div className="space-y-1">
-                                {Array.from({ length: numSlots }).map((_, slotIndex) => {
-                                  const currentWorkerId = cellAssignments[slotIndex]?.worker_id ?? ''
-                                  const eligible = eligibleWorkersForSlot(date, shiftType, slotIndex)
-                                  return (
-                                    <select
-                                      key={slotIndex}
-                                      value={currentWorkerId}
-                                      onChange={(e) => selectWorkerForSlot(date, shiftType, slotIndex, e.target.value)}
-                                      className="w-full border border-gray-200 rounded"
-                                      style={{ fontSize: '11px', padding: '2px' }}
-                                    >
-                                      <option value="">–</option>
-                                      {eligible.map(w => (
-                                        <option key={w.id} value={w.id}>{w.name}</option>
-                                      ))}
-                                    </select>
-                                  )
-                                })}
-                              </div>
+                            <td key={`${date}|${shiftType}`} className="px-1 py-2 border-l border-gray-50 align-top" style={isReadOnly ? { background: '#fafafa' } : undefined}>
+                              {showGroupBar && (
+                                isReadOnly || isLocked ? (
+                                  <div
+                                    title={
+                                      groupLabel
+                                        ? `Skupina ${groupLabel}${isReadOnly ? ' (minulý týden, jen pro čtení)' : isLocked ? ' (rotace je uzamčena)' : ''}`
+                                        : isLocked ? 'Rotace je uzamčena' : undefined
+                                    }
+                                    className="w-full mb-1.5 rounded"
+                                    style={{ height: '6px', background: groupLabel ? GROUP_COLORS[groupLabel] : '#f0f0f0' }}
+                                  />
+                                ) : (
+                                  <button
+                                    onClick={() => cycleGroup(date, shiftType)}
+                                    title={groupLabel ? `Skupina ${groupLabel} (klikněte pro změnu)` : 'Klikněte pro nastavení skupiny'}
+                                    className="w-full mb-1.5 rounded cursor-pointer border-0"
+                                    style={{ height: '6px', background: groupLabel ? GROUP_COLORS[groupLabel] : '#f0f0f0' }}
+                                  />
+                                )
+                              )}
+
+                              {isReadOnly ? (
+                                <>
+                                  <div className="text-gray-400 mb-1.5" style={{ fontSize: '10px' }}>
+                                    ({cellAssignments.length}/{requiredCount})
+                                  </div>
+                                  <div className="space-y-1">
+                                    {cellAssignments.length === 0 ? (
+                                      <div className="text-gray-300" style={{ fontSize: '11px' }}>–</div>
+                                    ) : (
+                                      cellAssignments.map((a) => (
+                                        <div key={a.id} className="text-gray-500 truncate" style={{ fontSize: '11px' }} title={a.worker_name}>
+                                          {a.worker_name}
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="flex items-center gap-1 mb-1.5">
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      defaultValue={requiredCount}
+                                      onBlur={(e) => updateRequirement(date, shiftType, parseInt(e.target.value) || 0)}
+                                      className="border border-gray-200 rounded text-center"
+                                      style={{ width: '32px', fontSize: '11px', padding: '1px' }}
+                                      title="Potřeba míst"
+                                    />
+                                    <span className="text-gray-400" style={{ fontSize: '10px' }}>
+                                      ({cellAssignments.length}/{requiredCount})
+                                    </span>
+                                  </div>
+                                  <div className="space-y-1">
+                                    {Array.from({ length: numSlots }).map((_, slotIndex) => {
+                                      const currentWorkerId = cellAssignments[slotIndex]?.worker_id ?? ''
+                                      const eligible = eligibleWorkersForSlot(date, shiftType, slotIndex)
+                                      return (
+                                        <select
+                                          key={slotIndex}
+                                          value={currentWorkerId}
+                                          onChange={(e) => selectWorkerForSlot(date, shiftType, slotIndex, e.target.value)}
+                                          className="w-full border border-gray-200 rounded"
+                                          style={{ fontSize: '11px', padding: '2px' }}
+                                        >
+                                          <option value="">–</option>
+                                          {eligible.map(w => (
+                                            <option key={w.id} value={w.id}>{w.name}</option>
+                                          ))}
+                                        </select>
+                                      )
+                                    })}
+                                  </div>
+                                </>
+                              )}
                             </td>
                           )
                         })}
