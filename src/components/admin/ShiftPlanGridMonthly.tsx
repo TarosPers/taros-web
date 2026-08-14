@@ -25,6 +25,7 @@ interface Company {
   id: string
   name: string
   shift_types: string[]
+  shift_times: ShiftTimes
 }
 
 interface Department {
@@ -34,6 +35,7 @@ interface Department {
   color: string
   active: boolean
   shift_types: string[] | null
+  shift_times: ShiftTimes | null
 }
 
 interface Worker {
@@ -54,7 +56,8 @@ interface RawAssignment {
   department_id: string
   date: string
   shift_type: string
-  company_id: string // odvozeno z shift_departments
+  company_id: string
+  confirmed: boolean
 }
 
 function formatDate(d: Date): string {
@@ -73,8 +76,19 @@ function getMonthDays(anchorMonth: Date): Date[] {
   return days
 }
 
+// Vypočítá délku směny v hodinách ze začátku/konce "HH:MM" (zohledňuje noční směnu přes půlnoc)
+function calcHours(start?: string, end?: string): number {
+  if (!start || !end) return 0
+  const [sh, sm] = start.split(':').map(Number)
+  const [eh, em] = end.split(':').map(Number)
+  let diff = (eh * 60 + em) - (sh * 60 + sm)
+  if (diff <= 0) diff += 24 * 60
+  return Math.round((diff / 60) * 100) / 100
+}
+
 export default function ShiftPlanGridMonthly({ companyId }: { companyId: string }) {
   const [loading, setLoading] = useState(true)
+  const [confirming, setConfirming] = useState(false)
   const [company, setCompany] = useState<Company | null>(null)
   const [departments, setDepartments] = useState<Department[]>([])
   const [workers, setWorkers] = useState<Worker[]>([])
@@ -96,7 +110,7 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
     const load = async () => {
       setLoading(true)
       const [{ data: companyData }, { data: deptData }, { data: workerLinks }] = await Promise.all([
-        supabase.from('shift_companies').select('id, name, shift_types').eq('id', companyId).single(),
+        supabase.from('shift_companies').select('id, name, shift_types, shift_times').eq('id', companyId).single(),
         supabase.from('shift_departments').select('*').eq('company_id', companyId).eq('active', true).order('name'),
         supabase.from('shift_worker_companies').select('shift_workers(id, name)').eq('company_id', companyId),
       ])
@@ -121,7 +135,7 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
       deptIds.length > 0
         ? supabase.from('shift_requirements').select('department_id, date, shift_type, required_count').in('department_id', deptIds).gte('date', rangeStart).lte('date', rangeEnd)
         : Promise.resolve({ data: [] }),
-      supabase.from('shift_assignments').select('id, worker_id, department_id, date, shift_type, shift_departments(company_id)').gte('date', rangeStart).lte('date', rangeEnd),
+      supabase.from('shift_assignments').select('id, worker_id, department_id, date, shift_type, confirmed, shift_departments(company_id)').gte('date', rangeStart).lte('date', rangeEnd),
     ])
 
     setRequirements(reqData ?? [])
@@ -133,6 +147,7 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
         date: a.date,
         shift_type: a.shift_type,
         company_id: a.shift_departments?.company_id ?? '',
+        confirmed: a.confirmed ?? false,
       }))
     )
   }, [company, departments, rangeStart, rangeEnd])
@@ -142,6 +157,7 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
   }, [loadRangeData])
 
   const effectiveShiftTypes = (dept: Department) => dept.shift_types ?? shiftTypes
+  const effectiveShiftTimes = (dept: Department) => dept.shift_times ?? company?.shift_times ?? {}
 
   const getRequirement = (deptId: string, date: string, shiftType: string) =>
     requirements.find(r => r.department_id === deptId && r.date === date && r.shift_type === shiftType)?.required_count ?? 0
@@ -179,7 +195,7 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
 
     if (existing) {
       if (existing.department_id === deptId) return
-      const { error } = await supabase.from('shift_assignments').update({ department_id: deptId }).eq('id', existing.id)
+      const { error } = await supabase.from('shift_assignments').update({ department_id: deptId, confirmed: false, confirmed_at: null, hours: null }).eq('id', existing.id)
       if (error) alert('Chyba: ' + error.message)
     } else {
       const { error } = await supabase.from('shift_assignments').insert({
@@ -187,6 +203,28 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
       })
       if (error) alert(error.code === '23505' ? 'Tento pracovník je na danou směnu už přiřazen jinde.' : 'Chyba: ' + error.message)
     }
+    loadRangeData()
+  }
+
+  const confirmAll = async () => {
+    const toConfirm = assignments.filter(a => a.company_id === companyId && !a.confirmed)
+    if (toConfirm.length === 0) {
+      alert('Vše je již potvrzeno, nebo nejsou žádná přiřazení k potvrzení.')
+      return
+    }
+    if (!confirm(`Potvrdit ${toConfirm.length} nepotvrzených směn a zapsat odpracované hodiny do karet pracovníků?`)) return
+
+    setConfirming(true)
+    const nowIso = new Date().toISOString()
+
+    await Promise.all(toConfirm.map(a => {
+      const dept = departments.find(d => d.id === a.department_id)
+      const times = dept ? effectiveShiftTimes(dept)[a.shift_type] : undefined
+      const hours = calcHours(times?.start, times?.end)
+      return supabase.from('shift_assignments').update({ confirmed: true, confirmed_at: nowIso, hours }).eq('id', a.id)
+    }))
+
+    setConfirming(false)
     loadRangeData()
   }
 
@@ -198,10 +236,19 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
 
   const cellWidth = 34
   const labelWidth = 170
+  const unconfirmedCount = assignments.filter(a => a.company_id === companyId && !a.confirmed).length
 
   return (
     <div>
-      <div className="flex items-center justify-end mb-4">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <button
+          onClick={confirmAll}
+          disabled={confirming}
+          className="text-xs px-3 py-1.5 rounded-lg text-white font-medium disabled:opacity-60"
+          style={{ background: '#2a4f2d' }}
+        >
+          {confirming ? 'Potvrzuji...' : `Potvrdit${unconfirmedCount > 0 ? ` (${unconfirmedCount})` : ''}`}
+        </button>
         <div className="flex items-center gap-2">
           <button onClick={goToPrevMonth} className="text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50">← Předchozí</button>
           <span className="text-sm font-medium text-gray-700 whitespace-nowrap" style={{ minWidth: '140px', textAlign: 'center' }}>
@@ -210,6 +257,9 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
           <button onClick={goToNextMonth} className="text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50">Další →</button>
         </div>
       </div>
+      <p className="text-xs text-gray-400 mb-4">
+        Potvrzením se pro nepotvrzené směny spočítají a zapíší odpracované hodiny na kartu pracovníka. Pokud po potvrzení směnu změníte, je potřeba potvrdit znovu.
+      </p>
 
       {departments.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
@@ -248,7 +298,6 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
               </tr>
             </thead>
             <tbody>
-              {/* Řádky provozů - editovatelná potřeba */}
               {departments.map((dept) => {
                 const deptShifts = effectiveShiftTypes(dept)
                 return (
@@ -287,7 +336,6 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
                 )
               })}
 
-              {/* Souhrny */}
               {[
                 { label: 'Potřeba', fn: getPotreba, style: { color: '#1a1a1a', fontWeight: 600 } },
                 { label: 'Mám',     fn: getMam,     style: { color: '#2a4f2d', fontWeight: 600 } },
@@ -317,7 +365,6 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
                 </tr>
               ))}
 
-              {/* Řádky pracovníků */}
               {workers.map((worker) => (
                 <tr key={worker.id} className="border-b border-gray-50">
                   <td className="sticky left-0 bg-white z-10 px-2 py-1" style={{ minWidth: labelWidth, width: labelWidth }}>
@@ -329,6 +376,7 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
                       const assignment = getWorkerAssignment(worker.id, date, s)
                       const isForeignCompany = assignment && assignment.company_id !== companyId
                       const options = departments.filter(dep => effectiveShiftTypes(dep).includes(s))
+                      const assignedDept = assignment ? departments.find(dep => dep.id === assignment.department_id) : null
 
                       return (
                         <td key={`${date}-${s}`} className="text-center" style={{ width: cellWidth, minWidth: cellWidth, borderLeft: i === 0 ? '1px solid #e5e7eb' : undefined }}>
@@ -341,15 +389,18 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
                             <select
                               value={assignment?.department_id ?? ''}
                               onChange={(e) => selectDeptForWorkerCell(worker.id, date, s, e.target.value)}
-                              className="border-0 text-center"
+                              className="text-center"
                               style={{
                                 width: cellWidth,
                                 fontSize: '9px',
                                 padding: '2px 0',
-                                background: assignment ? departments.find(dep => dep.id === assignment.department_id)?.color + '33' : 'transparent',
-                                color: assignment ? departments.find(dep => dep.id === assignment.department_id)?.color : '#9ca3af',
-                                fontWeight: assignment ? 600 : 400,
+                                background: assignedDept ? assignedDept.color + '33' : 'transparent',
+                                color: assignedDept ? assignedDept.color : '#9ca3af',
+                                fontWeight: assignedDept ? 600 : 400,
+                                border: assignment?.confirmed ? '1px solid #2a4f2d' : '1px solid transparent',
+                                borderRadius: '3px',
                               }}
+                              title={assignment?.confirmed ? 'Potvrzeno' : undefined}
                             >
                               <option value="">–</option>
                               {options.map(dep => (
@@ -366,7 +417,6 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
             </tbody>
           </table>
 
-          {/* Legenda zkratek provozů */}
           <div className="flex flex-wrap gap-3 mt-4 px-2 pb-1">
             {departments.map((dept) => (
               <div key={dept.id} className="flex items-center gap-1.5">
@@ -374,6 +424,10 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
                 <span className="text-xs text-gray-500">{dept.abbreviation || '?'} – {dept.name}</span>
               </div>
             ))}
+            <div className="flex items-center gap-1.5 ml-4">
+              <span className="rounded" style={{ width: '10px', height: '10px', border: '1px solid #2a4f2d' }} />
+              <span className="text-xs text-gray-500">= potvrzeno</span>
+            </div>
           </div>
         </div>
       )}

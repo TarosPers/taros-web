@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
 
@@ -8,9 +8,18 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+const MONTH_NAMES = [
+  'Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen',
+  'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec',
+]
+
 interface Company {
   id: string
   name: string
+}
+
+function formatDate(d: Date): string {
+  return d.toISOString().slice(0, 10)
 }
 
 export default function EditShiftWorkerPage({ params }: { params: { id: string } }) {
@@ -22,6 +31,12 @@ export default function EditShiftWorkerPage({ params }: { params: { id: string }
   const [note, setNote] = useState('')
   const [active, setActive] = useState(true)
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([])
+
+  // Odpracované hodiny
+  const [hoursMonth, setHoursMonth] = useState<Date>(() => { const d = new Date(); d.setDate(1); return d })
+  const [monthlyHours, setMonthlyHours] = useState<{ companyName: string; hours: number }[]>([])
+  const [totalHours, setTotalHours] = useState(0)
+  const [hoursLoading, setHoursLoading] = useState(true)
 
   useEffect(() => {
     const load = async () => {
@@ -42,6 +57,42 @@ export default function EditShiftWorkerPage({ params }: { params: { id: string }
     }
     load()
   }, [params.id])
+
+  const loadHours = useCallback(async () => {
+    setHoursLoading(true)
+    const year = hoursMonth.getFullYear()
+    const month = hoursMonth.getMonth()
+    const rangeStart = formatDate(new Date(year, month, 1))
+    const rangeEnd = formatDate(new Date(year, month + 1, 0))
+
+    const { data } = await supabase
+      .from('shift_assignments')
+      .select('hours, shift_departments(shift_companies(id, name))')
+      .eq('worker_id', params.id)
+      .eq('confirmed', true)
+      .gte('date', rangeStart)
+      .lte('date', rangeEnd)
+
+    const byCompany: Record<string, { companyName: string; hours: number }> = {}
+    let total = 0
+    ;(data ?? []).forEach((row: any) => {
+      const company = row.shift_departments?.shift_companies
+      const hours = row.hours ?? 0
+      total += hours
+      if (company) {
+        if (!byCompany[company.id]) byCompany[company.id] = { companyName: company.name, hours: 0 }
+        byCompany[company.id].hours += hours
+      }
+    })
+
+    setMonthlyHours(Object.values(byCompany))
+    setTotalHours(Math.round(total * 100) / 100)
+    setHoursLoading(false)
+  }, [params.id, hoursMonth])
+
+  useEffect(() => {
+    loadHours()
+  }, [loadHours])
 
   const toggleCompany = (id: string) => {
     setSelectedCompanies(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id])
@@ -74,6 +125,9 @@ export default function EditShiftWorkerPage({ params }: { params: { id: string }
 
     router.push('/admin/shifts/workers')
   }
+
+  const goToPrevMonth = () => { const d = new Date(hoursMonth); d.setMonth(d.getMonth() - 1); setHoursMonth(d) }
+  const goToNextMonth = () => { const d = new Date(hoursMonth); d.setMonth(d.getMonth() + 1); setHoursMonth(d) }
 
   if (loading) return <div className="text-sm text-gray-400">Načítám...</div>
 
@@ -134,6 +188,43 @@ export default function EditShiftWorkerPage({ params }: { params: { id: string }
           </button>
         </div>
       </form>
+
+      {/* Odpracované hodiny */}
+      <div className="bg-white rounded-xl border border-gray-100 p-6 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-medium" style={{ color: '#1a1a1a' }}>Odpracované hodiny (potvrzené)</h2>
+          <div className="flex items-center gap-2">
+            <button onClick={goToPrevMonth} className="text-xs px-2 py-1 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50">←</button>
+            <span className="text-xs text-gray-600" style={{ minWidth: '100px', textAlign: 'center' }}>
+              {MONTH_NAMES[hoursMonth.getMonth()]} {hoursMonth.getFullYear()}
+            </span>
+            <button onClick={goToNextMonth} className="text-xs px-2 py-1 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50">→</button>
+          </div>
+        </div>
+
+        {hoursLoading ? (
+          <p className="text-xs text-gray-400">Načítám...</p>
+        ) : (
+          <>
+            <div className="text-2xl font-medium mb-3" style={{ color: '#2a4f2d' }}>
+              {totalHours} h <span className="text-sm text-gray-400 font-normal">celkem</span>
+            </div>
+            {monthlyHours.length > 0 && (
+              <div className="space-y-1.5">
+                {monthlyHours.map((c) => (
+                  <div key={c.companyName} className="flex items-center justify-between text-xs text-gray-500">
+                    <span>{c.companyName}</span>
+                    <span className="font-medium" style={{ color: '#1a1a1a' }}>{c.hours} h</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {monthlyHours.length === 0 && (
+              <p className="text-xs text-gray-400">Žádné potvrzené směny v tomto měsíci.</p>
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }
