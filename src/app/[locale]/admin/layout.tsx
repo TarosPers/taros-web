@@ -174,6 +174,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ]
   const isSystemActive = pathname.includes('/admin/pages') || pathname.includes('/admin/users')
 
+  // Plánovací stránka dostane celou šířku obrazovky, ať se do mřížky vejde víc dní čitelně
+  const isPlanPage = pathname.includes('/admin/shifts/plan')
+
   return (
     <div className="min-h-screen" style={{ background: '#f5f5f5' }}>
       <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
@@ -215,7 +218,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
       </nav>
-      <main className="max-w-7xl mx-auto px-8 py-8">{children}</main>
+      <main className={isPlanPage ? 'w-full px-4 py-8' : 'max-w-7xl mx-auto px-8 py-8'}>{children}</main>
     </div>
   )
 }

@@ -196,8 +196,8 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
   if (loading) return <div className="text-sm text-gray-400">Načítám...</div>
   if (!company) return <div className="text-sm text-gray-400">Firma nenalezena</div>
 
-  const cellWidth = 26
-  const labelWidth = 150
+  const cellWidth = 34
+  const labelWidth = 170
 
   return (
     <div>
