@@ -14,6 +14,12 @@ const SHIFT_LABELS: Record<string, string> = {
   night: 'Noční',
 }
 
+const COLOR_PALETTE = [
+  '#2a4f2d', '#e07b0a', '#3b82f6', '#e11d48',
+  '#8b5cf6', '#059669', '#ca8a04', '#0891b2',
+  '#db2777', '#65a30d',
+]
+
 type ShiftTimes = Record<string, { start: string; end: string }>
 
 interface Company {
@@ -29,6 +35,8 @@ export default function EditShiftDepartmentPage({ params }: { params: { id: stri
   const [loading, setLoading] = useState(true)
   const [company, setCompany] = useState<Company | null>(null)
   const [name, setName] = useState('')
+  const [abbreviation, setAbbreviation] = useState('')
+  const [color, setColor] = useState(COLOR_PALETTE[0])
   const [active, setActive] = useState(true)
   const [useCustom, setUseCustom] = useState(false)
   const [customShiftTypes, setCustomShiftTypes] = useState<string[]>([])
@@ -43,6 +51,8 @@ export default function EditShiftDepartmentPage({ params }: { params: { id: stri
       setCompany(companyData)
       if (dept) {
         setName(dept.name)
+        setAbbreviation(dept.abbreviation ?? '')
+        setColor(dept.color ?? COLOR_PALETTE[0])
         setActive(dept.active)
         const hasCustom = !!dept.shift_types
         setUseCustom(hasCustom)
@@ -68,6 +78,10 @@ export default function EditShiftDepartmentPage({ params }: { params: { id: stri
       alert('Vyberte alespoň jednu směnu pro tento provoz')
       return
     }
+    if (!abbreviation.trim()) {
+      alert('Vyplňte zkratku provozu')
+      return
+    }
     setSaving(true)
 
     const relevantTimes: ShiftTimes = {}
@@ -77,6 +91,8 @@ export default function EditShiftDepartmentPage({ params }: { params: { id: stri
 
     const { error } = await supabase.from('shift_departments').update({
       name,
+      abbreviation: abbreviation.trim(),
+      color,
       active,
       shift_types: useCustom ? customShiftTypes : null,
       shift_times: useCustom ? relevantTimes : null,
@@ -102,9 +118,45 @@ export default function EditShiftDepartmentPage({ params }: { params: { id: stri
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <div className="mb-4">
-            <label className="form-label">Název provozu *</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} className="form-input" required />
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="form-label">Název provozu *</label>
+              <input value={name} onChange={(e) => setName(e.target.value)} className="form-input" required />
+            </div>
+            <div>
+              <label className="form-label">Zkratka *</label>
+              <input
+                value={abbreviation}
+                onChange={(e) => setAbbreviation(e.target.value)}
+                className="form-input"
+                required
+                maxLength={4}
+                placeholder="KOM"
+              />
+              <p className="text-xs text-gray-400 mt-1">Krátký kód zobrazený v měsíční matici (max. 4 znaky)</p>
+            </div>
+          </div>
+
+          <div>
+            <label className="form-label mb-2 block">Barva</label>
+            <div className="flex gap-2 flex-wrap">
+              {COLOR_PALETTE.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setColor(c)}
+                  className="rounded-full transition-all"
+                  style={{
+                    width: '28px',
+                    height: '28px',
+                    background: c,
+                    border: color === c ? '2px solid #1a1a1a' : '2px solid transparent',
+                    boxShadow: color === c ? '0 0 0 2px #fff, 0 0 0 3px ' + c : 'none',
+                  }}
+                  aria-label={c}
+                />
+              ))}
+            </div>
           </div>
         </div>
 

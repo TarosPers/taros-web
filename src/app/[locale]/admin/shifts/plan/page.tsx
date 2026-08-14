@@ -3,6 +3,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import { useSearchParams } from 'next/navigation'
 import ShiftPlanGrid from '@/components/admin/ShiftPlanGrid'
+import ShiftPlanGridMonthly from '@/components/admin/ShiftPlanGridMonthly'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,6 +22,7 @@ function ShiftPlanPageInner() {
   const [companies, setCompanies] = useState<Company[]>([])
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [viewMode, setViewMode] = useState<'week' | 'month'>('week')
 
   useEffect(() => {
     supabase.from('shift_companies').select('id, name').eq('active', true).order('name').then(({ data }) => {
@@ -38,7 +40,35 @@ function ShiftPlanPageInner() {
 
   return (
     <div>
-      <h1 className="text-xl font-medium mb-4" style={{ color: '#1a1a1a' }}>Plánování směn</h1>
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <h1 className="text-xl font-medium" style={{ color: '#1a1a1a' }}>Plánování směn</h1>
+        <div className="flex items-center gap-1 rounded-lg p-0.5" style={{ background: '#f0f0f0' }}>
+          <button
+            onClick={() => setViewMode('week')}
+            className="text-xs px-3 py-1.5 rounded-md transition-colors"
+            style={{
+              background: viewMode === 'week' ? '#fff' : 'transparent',
+              color: viewMode === 'week' ? '#2a4f2d' : '#6b7280',
+              fontWeight: viewMode === 'week' ? 500 : 400,
+              boxShadow: viewMode === 'week' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+            }}
+          >
+            Týden
+          </button>
+          <button
+            onClick={() => setViewMode('month')}
+            className="text-xs px-3 py-1.5 rounded-md transition-colors"
+            style={{
+              background: viewMode === 'month' ? '#fff' : 'transparent',
+              color: viewMode === 'month' ? '#2a4f2d' : '#6b7280',
+              fontWeight: viewMode === 'month' ? 500 : 400,
+              boxShadow: viewMode === 'month' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+            }}
+          >
+            Měsíc
+          </button>
+        </div>
+      </div>
 
       {companies.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
@@ -63,7 +93,11 @@ function ShiftPlanPageInner() {
             ))}
           </div>
 
-          {selectedCompanyId && <ShiftPlanGrid companyId={selectedCompanyId} />}
+          {selectedCompanyId && (
+            viewMode === 'week'
+              ? <ShiftPlanGrid companyId={selectedCompanyId} />
+              : <ShiftPlanGridMonthly companyId={selectedCompanyId} />
+          )}
         </>
       )}
     </div>
