@@ -27,8 +27,10 @@ export default function NewShiftWorkerPage() {
   const [note, setNote] = useState('')
   const [active, setActive] = useState(true)
   const [hasDrivingLicense, setHasDrivingLicense] = useState(true)
+  const [phoneCall, setPhoneCall] = useState('')
+  const [phoneWhatsapp, setPhoneWhatsapp] = useState('')
+  const [samePhone, setSamePhone] = useState(true)
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([])
-  // Vybraní kolegové s prioritou 1-5 (klíč = worker id, hodnota = priorita)
   const [companionPriorities, setCompanionPriorities] = useState<Record<string, number>>({})
 
   useEffect(() => {
@@ -69,6 +71,8 @@ export default function NewShiftWorkerPage() {
       note: note || null,
       active,
       has_driving_license: hasDrivingLicense,
+      phone_call: phoneCall || null,
+      phone_whatsapp: samePhone ? (phoneCall || null) : (phoneWhatsapp || null),
     }).select().single()
 
     if (error || !worker) {
@@ -94,7 +98,7 @@ export default function NewShiftWorkerPage() {
       if (linkError) alert('Pracovník uložen, ale nepodařilo se uložit sociální vazby: ' + linkError.message)
     }
 
-    router.push('/admin/shifts/workers')
+    router.push(`/admin/shifts/workers/${worker.id}`)
   }
 
   return (
@@ -124,6 +128,30 @@ export default function NewShiftWorkerPage() {
             />
             <span className="text-sm text-gray-700">Má řidičský průkaz</span>
           </label>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
+          <label className="form-label mb-2 block">Telefon</label>
+          <div className="mb-3">
+            <label className="form-label text-xs">Na volání</label>
+            <input value={phoneCall} onChange={(e) => setPhoneCall(e.target.value)} className="form-input" placeholder="+420 601 234 567" />
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer mb-3">
+            <input
+              type="checkbox"
+              checked={samePhone}
+              onChange={(e) => setSamePhone(e.target.checked)}
+              className="w-4 h-4 rounded"
+              style={{ accentColor: '#2a4f2d' }}
+            />
+            <span className="text-sm text-gray-700">Stejné číslo i na WhatsApp</span>
+          </label>
+          {!samePhone && (
+            <div>
+              <label className="form-label text-xs">Na WhatsApp</label>
+              <input value={phoneWhatsapp} onChange={(e) => setPhoneWhatsapp(e.target.value)} className="form-input" placeholder="+420 601 234 567" />
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-6">

@@ -37,8 +37,18 @@ export default function EditShiftWorkerPage({ params }: { params: { id: string }
   const [note, setNote] = useState('')
   const [active, setActive] = useState(true)
   const [hasDrivingLicense, setHasDrivingLicense] = useState(true)
+  const [phoneCall, setPhoneCall] = useState('')
+  const [phoneWhatsapp, setPhoneWhatsapp] = useState('')
+  const [samePhone, setSamePhone] = useState(true)
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([])
   const [companionPriorities, setCompanionPriorities] = useState<Record<string, number>>({})
+
+  // Přístup pracovníka (portál)
+  const [authUserId, setAuthUserId] = useState<string | null>(null)
+  const [loginEmail, setLoginEmail] = useState<string | null>(null)
+  const [newAccountEmail, setNewAccountEmail] = useState('')
+  const [newAccountPassword, setNewAccountPassword] = useState('')
+  const [creatingAccount, setCreatingAccount] = useState(false)
 
   const [hoursMonth, setHoursMonth] = useState<Date>(() => { const d = new Date(); d.setDate(1); return d })
   const [monthlyHours, setMonthlyHours] = useState<{ companyName: string; hours: number }[]>([])
@@ -60,6 +70,11 @@ export default function EditShiftWorkerPage({ params }: { params: { id: string }
         setNote(worker.note ?? '')
         setActive(worker.active)
         setHasDrivingLicense(worker.has_driving_license ?? true)
+        setPhoneCall(worker.phone_call ?? '')
+        setPhoneWhatsapp(worker.phone_whatsapp ?? '')
+        setSamePhone(!worker.phone_whatsapp || worker.phone_whatsapp === worker.phone_call)
+        setAuthUserId(worker.auth_user_id ?? null)
+        setLoginEmail(worker.login_email ?? null)
       }
       setCompanies(allCompanies ?? [])
       setSelectedCompanies((links ?? []).map(l => l.company_id))
@@ -137,6 +152,8 @@ export default function EditShiftWorkerPage({ params }: { params: { id: string }
       note: note || null,
       active,
       has_driving_license: hasDrivingLicense,
+      phone_call: phoneCall || null,
+      phone_whatsapp: samePhone ? (phoneCall || null) : (phoneWhatsapp || null),
     }).eq('id', params.id)
 
     if (error) {
@@ -165,6 +182,33 @@ export default function EditShiftWorkerPage({ params }: { params: { id: string }
     }
 
     router.push('/admin/shifts/workers')
+  }
+
+  const handleCreateAccount = async () => {
+    if (!newAccountEmail || !newAccountPassword) {
+      alert('Vyplňte e-mail i heslo')
+      return
+    }
+    setCreatingAccount(true)
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch('/api/admin/create-worker-account', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session?.access_token}`,
+      },
+      body: JSON.stringify({ workerId: params.id, email: newAccountEmail, password: newAccountPassword }),
+    })
+    const result = await res.json()
+    if (!res.ok) {
+      alert('Chyba: ' + result.error)
+    } else {
+      setAuthUserId(result.userId)
+      setLoginEmail(newAccountEmail)
+      setNewAccountPassword('')
+      alert('Přístup vytvořen. Sdělte pracovníkovi e-mail a heslo osobně.')
+    }
+    setCreatingAccount(false)
   }
 
   const goToPrevMonth = () => { const d = new Date(hoursMonth); d.setMonth(d.getMonth() - 1); setHoursMonth(d) }
@@ -199,6 +243,30 @@ export default function EditShiftWorkerPage({ params }: { params: { id: string }
             />
             <span className="text-sm text-gray-700">Má řidičský průkaz</span>
           </label>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
+          <label className="form-label mb-2 block">Telefon</label>
+          <div className="mb-3">
+            <label className="form-label text-xs">Na volání</label>
+            <input value={phoneCall} onChange={(e) => setPhoneCall(e.target.value)} className="form-input" placeholder="+420 601 234 567" />
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer mb-3">
+            <input
+              type="checkbox"
+              checked={samePhone}
+              onChange={(e) => setSamePhone(e.target.checked)}
+              className="w-4 h-4 rounded"
+              style={{ accentColor: '#2a4f2d' }}
+            />
+            <span className="text-sm text-gray-700">Stejné číslo i na WhatsApp</span>
+          </label>
+          {!samePhone && (
+            <div>
+              <label className="form-label text-xs">Na WhatsApp</label>
+              <input value={phoneWhatsapp} onChange={(e) => setPhoneWhatsapp(e.target.value)} className="form-input" placeholder="+420 601 234 567" />
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-6">
@@ -280,6 +348,54 @@ export default function EditShiftWorkerPage({ params }: { params: { id: string }
           </button>
         </div>
       </form>
+
+      {/* Přístup do portálu pro pracovníky */}
+      <div className="bg-white rounded-xl border border-gray-100 p-6 mt-6">
+        <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>Přístup do portálu pro pracovníky</h2>
+        {authUserId ? (
+          <div className="text-sm text-gray-600">
+            <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium mb-2" style={{ background: '#eaf3e8', color: '#2a4f2d' }}>
+              ✓ Přístup vytvořen
+            </span>
+            <p>Přihlašovací e-mail: <strong>{loginEmail}</strong></p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-xs text-gray-400">
+              Pracovník se bude moci přihlásit na portálu, zadávat svou dostupnost a vidět svůj rozvrh směn.
+            </p>
+            <div>
+              <label className="form-label text-xs">E-mail</label>
+              <input
+                type="email"
+                value={newAccountEmail}
+                onChange={(e) => setNewAccountEmail(e.target.value)}
+                className="form-input"
+                placeholder="jana.novakova@example.com"
+              />
+            </div>
+            <div>
+              <label className="form-label text-xs">Počáteční heslo</label>
+              <input
+                type="text"
+                value={newAccountPassword}
+                onChange={(e) => setNewAccountPassword(e.target.value)}
+                className="form-input"
+                placeholder="alespoň 6 znaků"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleCreateAccount}
+              disabled={creatingAccount}
+              className="px-5 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60"
+              style={{ background: '#2a4f2d' }}
+            >
+              {creatingAccount ? 'Vytvářím...' : 'Vytvořit přístup'}
+            </button>
+          </div>
+        )}
+      </div>
 
       <div className="bg-white rounded-xl border border-gray-100 p-6 mt-6">
         <div className="flex items-center justify-between mb-4">
