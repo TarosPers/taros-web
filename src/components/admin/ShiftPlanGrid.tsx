@@ -24,6 +24,8 @@ const GROUP_COLORS: Record<string, string> = {
 }
 const GROUP_CYCLE: (string | null)[] = [null, 'A', 'B', 'C', 'D']
 
+type ShiftTimes = Record<string, { start: string; end: string }>
+
 // Barevná rotace skupin dává smysl jen u standardních časů směn.
 // Pokud se časy provozu/firmy liší, pruh se vůbec nezobrazuje.
 const STANDARD_SHIFT_TIMES: ShiftTimes = {
@@ -32,7 +34,8 @@ const STANDARD_SHIFT_TIMES: ShiftTimes = {
   night:     { start: '20:00', end: '04:00' },
 }
 
-type ShiftTimes = Record<string, { start: string; end: string }>
+// Minimální zákonná přestávka mezi směnami (Arbeitszeitgesetz)
+const MIN_REST_HOURS = 11
 
 interface Company {
   id: string
@@ -78,6 +81,13 @@ interface GroupRotationRow {
   group_label: string
 }
 
+interface WorkerInterval {
+  date: string
+  shift_type: string
+  start: Date
+  end: Date
+}
+
 function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10)
 }
@@ -95,6 +105,15 @@ function getMonday(date: Date): Date {
   return d
 }
 
+function computeInterval(dateStr: string, shiftType: string, times: ShiftTimes | undefined): { start: Date; end: Date } | null {
+  const t = times?.[shiftType]
+  if (!t) return null
+  const start = new Date(`${dateStr}T${t.start}:00`)
+  let end = new Date(`${dateStr}T${t.end}:00`)
+  if (end <= start) end = new Date(end.getTime() + 24 * 60 * 60 * 1000) // směna přes půlnoc
+  return { start, end }
+}
+
 export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
   const [loading, setLoading] = useState(true)
   const [company, setCompany] = useState<Company | null>(null)
@@ -106,6 +125,7 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
   const [busySet, setBusySet] = useState<Set<string>>(new Set())
   const [deptTotals, setDeptTotals] = useState<Record<string, number>>({})
   const [groupRotation, setGroupRotation] = useState<GroupRotationRow[]>([])
+  const [workerIntervals, setWorkerIntervals] = useState<Record<string, WorkerInterval[]>>({})
   const [anchorMonday, setAnchorMonday] = useState<Date>(() => getMonday(new Date()))
 
   const days: Date[] = []
@@ -119,6 +139,12 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
   }
   const rangeStart = formatDate(days[0])
   const rangeEnd = formatDate(days[days.length - 1])
+
+  // Rozšířený rozsah (+-1 den) - pro kontrolu pauzy na hranicích zobrazeného týdne
+  const extStartDate = new Date(days[0]); extStartDate.setDate(extStartDate.getDate() - 1)
+  const extEndDate = new Date(days[days.length - 1]); extEndDate.setDate(extEndDate.getDate() + 1)
+  const extRangeStart = formatDate(extStartDate)
+  const extRangeEnd = formatDate(extEndDate)
 
   useEffect(() => {
     const load = async () => {
@@ -144,10 +170,12 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
     if (departments.length === 0) return
     const deptIds = departments.map(d => d.id)
 
-    const [{ data: reqData }, { data: allAssignments }, { data: rotationData }] = await Promise.all([
+    const [{ data: reqData }, { data: allAssignments }, { data: rotationData }, { data: extAssignments }] = await Promise.all([
       supabase.from('shift_requirements').select('*').in('department_id', deptIds).gte('date', rangeStart).lte('date', rangeEnd),
       supabase.from('shift_assignments').select('*, shift_workers(name)').gte('date', rangeStart).lte('date', rangeEnd).order('created_at'),
       supabase.from('shift_group_rotation').select('*').eq('company_id', companyId).gte('date', rangeStart).lte('date', rangeEnd),
+      // Napříč VŠEMI firmami a provozy - kvůli kontrole zákonné pauzy mezi směnami
+      supabase.from('shift_assignments').select('worker_id, date, shift_type, department_id').gte('date', extRangeStart).lte('date', extRangeEnd),
     ])
 
     const totals: Record<string, number> = {}
@@ -176,7 +204,30 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
           created_at: a.created_at,
         }))
     )
-  }, [departments, selectedDeptId, rangeStart, rangeEnd, companyId])
+
+    // Dopočítat časové intervaly směn napříč firmami pro kontrolu zákonné pauzy
+    const extDeptIds = [...new Set((extAssignments ?? []).map((a: any) => a.department_id))]
+    let deptTimesMap: Record<string, ShiftTimes> = {}
+    if (extDeptIds.length > 0) {
+      const { data: deptTimesData } = await supabase
+        .from('shift_departments')
+        .select('id, shift_times, shift_companies(shift_times)')
+        .in('id', extDeptIds)
+      ;(deptTimesData ?? []).forEach((d: any) => {
+        deptTimesMap[d.id] = d.shift_times ?? d.shift_companies?.shift_times ?? {}
+      })
+    }
+
+    const intervals: Record<string, WorkerInterval[]> = {}
+    ;(extAssignments ?? []).forEach((a: any) => {
+      const times = deptTimesMap[a.department_id]
+      const interval = computeInterval(a.date, a.shift_type, times)
+      if (!interval) return
+      if (!intervals[a.worker_id]) intervals[a.worker_id] = []
+      intervals[a.worker_id].push({ date: a.date, shift_type: a.shift_type, start: interval.start, end: interval.end })
+    })
+    setWorkerIntervals(intervals)
+  }, [departments, selectedDeptId, rangeStart, rangeEnd, extRangeStart, extRangeEnd, companyId])
 
   useEffect(() => {
     loadRangeData()
@@ -196,6 +247,26 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
 
   const getGroupLabel = (date: string, shiftType: string): string | null =>
     groupRotation.find(g => g.date === date && g.shift_type === shiftType)?.group_label ?? null
+
+  // Zjistí, jestli by přiřazení pracovníka na (date, shiftType) porušilo zákonnou pauzu
+  // vůči jeho ostatním směnám (napříč firmami). excludeSelf vynechá jeho vlastní stejnou směnu.
+  const isRestViolation = (workerId: string, date: string, shiftType: string): boolean => {
+    const candidate = computeInterval(date, shiftType, shiftTimesForDept)
+    if (!candidate) return false
+    const intervals = (workerIntervals[workerId] ?? []).filter(iv => !(iv.date === date && iv.shift_type === shiftType))
+    for (const iv of intervals) {
+      if (candidate.start < iv.end && iv.start < candidate.end) return true // překryv
+      if (candidate.start >= iv.end) {
+        const restHours = (candidate.start.getTime() - iv.end.getTime()) / 3600000
+        if (restHours < MIN_REST_HOURS) return true
+      }
+      if (iv.start >= candidate.end) {
+        const restHours = (iv.start.getTime() - candidate.end.getTime()) / 3600000
+        if (restHours < MIN_REST_HOURS) return true
+      }
+    }
+    return false
+  }
 
   const cycleGroup = async (date: string, shiftType: string) => {
     if (company?.group_rotation_locked) return
@@ -264,12 +335,20 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
       .filter((_, idx) => idx !== slotIndex)
       .map(a => a.worker_id)
 
-    return workers.filter(w => {
-      if (pickedInOtherSlots.includes(w.id)) return false
-      if (w.id === currentSlotWorkerId) return true
-      const key = `${w.id}|${date}|${shiftType}`
-      return !busySet.has(key)
-    })
+    const list = workers
+      .filter(w => {
+        if (pickedInOtherSlots.includes(w.id)) return false
+        if (w.id === currentSlotWorkerId) return true
+        const key = `${w.id}|${date}|${shiftType}`
+        return !busySet.has(key)
+      })
+      .map(w => ({ ...w, violation: isRestViolation(w.id, date, shiftType) }))
+
+    // Bezproblémoví pracovníci první (abecedně), problémoví (porušená pauza) na konci
+    return [
+      ...list.filter(w => !w.violation).sort((a, b) => a.name.localeCompare(b.name)),
+      ...list.filter(w => w.violation).sort((a, b) => a.name.localeCompare(b.name)),
+    ]
   }
 
   const toggleLock = async () => {
@@ -304,6 +383,9 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
           >
             {company.group_rotation_locked ? '🔒' : '🔓'}
           </button>
+          <span className="flex items-center gap-1 text-xs text-gray-400" title={`Pracovníci s porušenou zákonnou pauzou (${MIN_REST_HOURS}h) mezi směnami jsou v nabídce zvýrazněni červeně a řazeni na konec.`}>
+            ⚠ <span style={{ color: '#ef4444' }}>= porušená pauza {MIN_REST_HOURS}h</span>
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -458,17 +540,32 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
                                     {Array.from({ length: numSlots }).map((_, slotIndex) => {
                                       const currentWorkerId = cellAssignments[slotIndex]?.worker_id ?? ''
                                       const eligible = eligibleWorkersForSlot(date, shiftType, slotIndex)
+                                      const currentViolation = currentWorkerId ? isRestViolation(currentWorkerId, date, shiftType) : false
                                       return (
                                         <select
                                           key={slotIndex}
                                           value={currentWorkerId}
                                           onChange={(e) => selectWorkerForSlot(date, shiftType, slotIndex, e.target.value)}
-                                          className="w-full border border-gray-200 rounded"
-                                          style={{ fontSize: '11px', padding: '2px' }}
+                                          className="w-full rounded"
+                                          title={currentViolation ? `Pozor: porušena zákonná pauza ${MIN_REST_HOURS}h mezi směnami` : undefined}
+                                          style={{
+                                            fontSize: '11px',
+                                            padding: '2px',
+                                            border: currentViolation ? '1px solid #ef4444' : '1px solid #e5e7eb',
+                                            background: currentViolation ? '#fef2f2' : '#fff',
+                                            color: currentViolation ? '#ef4444' : 'inherit',
+                                            fontWeight: currentViolation ? 600 : 400,
+                                          }}
                                         >
                                           <option value="">–</option>
                                           {eligible.map(w => (
-                                            <option key={w.id} value={w.id}>{w.name}</option>
+                                            <option
+                                              key={w.id}
+                                              value={w.id}
+                                              style={{ color: w.violation ? '#ef4444' : 'inherit' }}
+                                            >
+                                              {w.violation ? '⚠ ' : ''}{w.name}
+                                            </option>
                                           ))}
                                         </select>
                                       )
