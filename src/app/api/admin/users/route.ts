@@ -16,6 +16,8 @@ export async function GET() {
     email: u.email,
     role: u.user_metadata?.role ?? 'admin',
     lang: u.user_metadata?.lang ?? 'cs',
+    // null/chybí = bez omezení (vidí vše), pole = jen vyjmenované sekce
+    permissions: u.user_metadata?.permissions ?? null,
     created_at: u.created_at,
     last_sign_in_at: u.last_sign_in_at,
   }))

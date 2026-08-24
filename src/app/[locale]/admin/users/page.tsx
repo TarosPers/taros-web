@@ -12,9 +12,19 @@ interface AdminUser {
   email: string
   role: string
   lang: string
+  permissions: string[] | null
   created_at: string
   last_sign_in_at: string | null
 }
+
+const PERMISSION_OPTIONS = [
+  { key: 'jobs', label: 'Inzeráty' },
+  { key: 'applicants', label: 'Žadatelé' },
+  { key: 'questionnaires', label: 'Dotazníky' },
+  { key: 'redirects', label: 'Přesměrování' },
+  { key: 'planning', label: 'Plánování' },
+  { key: 'pages', label: 'Stránky' },
+]
 
 const t = {
   cs: {
@@ -23,6 +33,7 @@ const t = {
     email: 'E-mail',
     role: 'Role',
     lang: 'Jazyk administrace',
+    permissions: 'Viditelné sekce (jen pro Admina, Superadmin vidí vždy vše)',
     btnInvite: 'Pozvat',
     inviting: 'Odesílám...',
     users: 'Uživatelé',
@@ -36,6 +47,9 @@ const t = {
     profileSave: 'Uložit',
     profileSaving: 'Ukládám...',
     profileSaved: 'Uloženo',
+    editPermissions: 'Oprávnění',
+    savePermissions: 'Uložit oprávnění',
+    allAccess: 'Vše',
   },
   de: {
     title: 'Benutzerverwaltung',
@@ -43,6 +57,7 @@ const t = {
     email: 'E-Mail',
     role: 'Rolle',
     lang: 'Verwaltungssprache',
+    permissions: 'Sichtbare Bereiche (nur für Admin, Superadmin sieht immer alles)',
     btnInvite: 'Einladen',
     inviting: 'Wird gesendet...',
     users: 'Benutzer',
@@ -56,6 +71,9 @@ const t = {
     profileSave: 'Speichern',
     profileSaving: 'Speichere...',
     profileSaved: 'Gespeichert',
+    editPermissions: 'Berechtigungen',
+    savePermissions: 'Berechtigungen speichern',
+    allAccess: 'Alle',
   },
 }
 
@@ -65,12 +83,16 @@ export default function AdminUsersPage() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState('admin')
   const [inviteLang, setInviteLang] = useState('cs')
+  const [invitePermissions, setInvitePermissions] = useState<string[]>(PERMISSION_OPTIONS.map(p => p.key))
   const [inviting, setInviting] = useState(false)
   const [message, setMessage] = useState('')
   const [currentLang, setCurrentLang] = useState<'cs' | 'de'>('cs')
   const [profileLang, setProfileLang] = useState<'cs' | 'de'>('cs')
   const [profileSaving, setProfileSaving] = useState(false)
   const [profileMessage, setProfileMessage] = useState('')
+  const [editingUserId, setEditingUserId] = useState<string | null>(null)
+  const [editingPermissions, setEditingPermissions] = useState<string[]>([])
+  const [savingPermissions, setSavingPermissions] = useState(false)
 
   const tr = t[currentLang]
 
@@ -91,21 +113,32 @@ export default function AdminUsersPage() {
     setLoading(false)
   }
 
+  const toggleInvitePermission = (key: string) => {
+    setInvitePermissions(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key])
+  }
+
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault()
     setInviting(true)
     setMessage('')
 
+    const body: Record<string, unknown> = { email: inviteEmail, role: inviteRole, lang: inviteLang }
+    // Pokud je zaškrtnuto úplně vše, pošleme null (bez omezení) místo explicitního seznamu
+    if (inviteRole === 'admin' && invitePermissions.length < PERMISSION_OPTIONS.length) {
+      body.permissions = invitePermissions
+    }
+
     const res = await fetch('/api/admin/users/invite', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: inviteEmail, role: inviteRole, lang: inviteLang }),
+      body: JSON.stringify(body),
     })
     const data = await res.json()
 
     if (data.ok) {
       setMessage(`✓ ${inviteEmail}`)
       setInviteEmail('')
+      setInvitePermissions(PERMISSION_OPTIONS.map(p => p.key))
       loadUsers()
     } else {
       setMessage('Chyba: ' + (data.error || ''))
@@ -143,6 +176,33 @@ export default function AdminUsersPage() {
     setProfileSaving(false)
   }
 
+  const startEditPermissions = (user: AdminUser) => {
+    setEditingUserId(user.id)
+    setEditingPermissions(user.permissions ?? PERMISSION_OPTIONS.map(p => p.key))
+  }
+
+  const toggleEditingPermission = (key: string) => {
+    setEditingPermissions(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key])
+  }
+
+  const savePermissions = async (userId: string) => {
+    setSavingPermissions(true)
+    const permissionsToSave = editingPermissions.length < PERMISSION_OPTIONS.length ? editingPermissions : null
+    const res = await fetch('/api/admin/users/update-permissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, permissions: permissionsToSave }),
+    })
+    const data = await res.json()
+    if (data.ok) {
+      setEditingUserId(null)
+      loadUsers()
+    } else {
+      alert('Chyba: ' + (data.error || ''))
+    }
+    setSavingPermissions(false)
+  }
+
   return (
     <div className="max-w-3xl space-y-6">
       <h1 className="text-xl font-medium" style={{ color: '#1a1a1a' }}>{tr.title}</h1>
@@ -178,40 +238,62 @@ export default function AdminUsersPage() {
       {/* Pozvání */}
       <div className="bg-white rounded-xl border border-gray-100 p-6">
         <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>{tr.invite}</h2>
-        <form onSubmit={handleInvite} className="flex gap-3 items-end flex-wrap">
-          <div className="flex-1 min-w-48">
-            <label className="block text-xs text-gray-500 mb-1">{tr.email}</label>
-            <input
-              type="email"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              className="form-input"
-              placeholder="novy@taros-personal.de"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">{tr.role}</label>
-            <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} className="form-input" style={{ minWidth: '130px' }}>
-              <option value="admin">Admin</option>
-              <option value="superadmin">Superadmin</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">{tr.lang}</label>
-            <select value={inviteLang} onChange={(e) => setInviteLang(e.target.value)} className="form-input" style={{ minWidth: '130px' }}>
-              <option value="cs">Čeština</option>
-              <option value="de">Deutsch</option>
-            </select>
-          </div>
-          <button
-            type="submit"
-            disabled={inviting}
-            className="px-5 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60"
+        <form onSubmit={handleInvite} className="space-y-4">
+          <div className="flex gap-3 items-end flex-wrap">
+            <div className="flex-1 min-w-48">
+              <label className="block text-xs text-gray-500 mb-1">{tr.email}</label>
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                className="form-input"
+                placeholder="novy@taros-personal.de"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">{tr.role}</label>
+              <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value)} className="form-input" style={{ minWidth: '130px' }}>
+                <option value="admin">Admin</option>
+                <option value="superadmin">Superadmin</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">{tr.lang}</label>
+              <select value={inviteLang} onChange={(e) => setInviteLang(e.target.value)} className="form-input" style={{ minWidth: '130px' }}>
+                <option value="cs">Čeština</option>
+                <option value="de">Deutsch</option>
+              </select>
+            </div>
+            <button
+              type="submit"
+              disabled={inviting}
+              className="px-5 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60"
             style={{ background: '#2a4f2d' }}
-          >
-            {inviting ? tr.inviting : tr.btnInvite}
-          </button>
+            >
+              {inviting ? tr.inviting : tr.btnInvite}
+            </button>
+          </div>
+
+          {inviteRole === 'admin' && (
+            <div>
+              <label className="block text-xs text-gray-500 mb-2">{tr.permissions}</label>
+              <div className="flex gap-4 flex-wrap">
+                {PERMISSION_OPTIONS.map(({ key, label }) => (
+                  <label key={key} className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={invitePermissions.includes(key)}
+                      onChange={() => toggleInvitePermission(key)}
+                      className="w-4 h-4 rounded"
+                      style={{ accentColor: '#2a4f2d' }}
+                    />
+                    <span className="text-sm text-gray-700">{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
         </form>
         {message && (
           <p className={`text-xs mt-3 ${message.startsWith('Chyba') ? 'text-red-500' : 'text-green-700'}`}>
@@ -238,38 +320,79 @@ export default function AdminUsersPage() {
             </thead>
             <tbody>
               {users.map((user) => (
-                <tr key={user.id} className="border-b border-gray-50">
-                  <td className="py-3 text-gray-700">{user.email}</td>
-                  <td className="py-3">
-                    <span
-                      className="text-xs px-2 py-0.5 rounded-full font-medium"
-                      style={{
-                        background: user.role === 'superadmin' ? '#fef3e6' : '#eaf3e8',
-                        color: user.role === 'superadmin' ? '#e07b0a' : '#2a4f2d',
-                      }}
-                    >
-                      {user.role === 'superadmin' ? 'Superadmin' : 'Admin'}
-                    </span>
-                  </td>
-                  <td className="py-3 text-gray-400 text-xs">
-                    {user.lang === 'de' ? 'Deutsch' : 'Čeština'}
-                  </td>
-                  <td className="py-3 text-gray-400 text-xs">
-                    {user.last_sign_in_at
-                      ? new Date(user.last_sign_in_at).toLocaleDateString('cs-CZ')
-                      : tr.never}
-                  </td>
-                  <td className="py-3 text-right">
-                    {user.role !== 'superadmin' && (
-                      <button
-                        onClick={() => handleDelete(user.id, user.email)}
-                        className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                <>
+                  <tr key={user.id} className="border-b border-gray-50">
+                    <td className="py-3 text-gray-700">{user.email}</td>
+                    <td className="py-3">
+                      <span
+                        className="text-xs px-2 py-0.5 rounded-full font-medium"
+                        style={{
+                          background: user.role === 'superadmin' ? '#fef3e6' : '#eaf3e8',
+                          color: user.role === 'superadmin' ? '#e07b0a' : '#2a4f2d',
+                        }}
                       >
-                        {tr.delete}
-                      </button>
-                    )}
-                  </td>
-                </tr>
+                        {user.role === 'superadmin' ? 'Superadmin' : 'Admin'}
+                      </span>
+                    </td>
+                    <td className="py-3 text-gray-400 text-xs">
+                      {user.lang === 'de' ? 'Deutsch' : 'Čeština'}
+                    </td>
+                    <td className="py-3 text-gray-400 text-xs">
+                      {user.last_sign_in_at
+                        ? new Date(user.last_sign_in_at).toLocaleDateString('cs-CZ')
+                        : tr.never}
+                    </td>
+                    <td className="py-3 text-right whitespace-nowrap">
+                      {user.role !== 'superadmin' && (
+                        <>
+                          <button
+                            onClick={() => editingUserId === user.id ? setEditingUserId(null) : startEditPermissions(user)}
+                            className="text-xs mr-3 transition-colors"
+                            style={{ color: '#2a4f2d' }}
+                          >
+                            {tr.editPermissions}
+                          </button>
+                          <button
+                            onClick={() => handleDelete(user.id, user.email)}
+                            className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                          >
+                            {tr.delete}
+                          </button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                  {editingUserId === user.id && (
+                    <tr>
+                      <td colSpan={5} className="pb-4">
+                        <div className="rounded-lg p-4" style={{ background: '#f9fafb' }}>
+                          <div className="flex gap-4 flex-wrap mb-3">
+                            {PERMISSION_OPTIONS.map(({ key, label }) => (
+                              <label key={key} className="flex items-center gap-1.5 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={editingPermissions.includes(key)}
+                                  onChange={() => toggleEditingPermission(key)}
+                                  className="w-4 h-4 rounded"
+                                  style={{ accentColor: '#2a4f2d' }}
+                                />
+                                <span className="text-sm text-gray-700">{label}</span>
+                              </label>
+                            ))}
+                          </div>
+                          <button
+                            onClick={() => savePermissions(user.id)}
+                            disabled={savingPermissions}
+                            className="px-4 py-1.5 rounded-lg text-xs font-medium text-white disabled:opacity-60"
+                            style={{ background: '#2a4f2d' }}
+                          >
+                            {savingPermissions ? '...' : tr.savePermissions}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
               ))}
             </tbody>
           </table>

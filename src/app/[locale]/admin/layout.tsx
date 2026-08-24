@@ -118,6 +118,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true)
   const [isSuperadmin, setIsSuperadmin] = useState(false)
   const [lang, setLang] = useState<'cs' | 'de'>('cs')
+  // null = bez omezení (vidí vše, jako doteď); pole = jen vyjmenované sekce
+  const [permissions, setPermissions] = useState<string[] | null>(null)
   const router = useRouter()
   const pathname = usePathname()
 
@@ -131,6 +133,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       }
       const userLang = session?.user?.user_metadata?.lang ?? 'cs'
       setLang(userLang as 'cs' | 'de')
+      const userPermissions = session?.user?.user_metadata?.permissions
+      setPermissions(Array.isArray(userPermissions) ? userPermissions : null)
       setLoading(false)
     })
   }, [])
@@ -154,12 +158,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return <>{children}</>
   }
 
+  // Superadmin vidí vždy vše, bez ohledu na permissions. Jinak: null = bez omezení, jinak filtrujeme podle klíče.
+  const canSee = (key: string) => isSuperadmin || permissions === null || permissions.includes(key)
+
   const navItems = [
-    { href: '/admin/jobs',            label: tr.jobs },
-    { href: '/admin/applicants',      label: tr.applicants },
-    { href: '/admin/questionnaires',  label: tr.questionnaires },
-    { href: '/admin/redirects',       label: tr.redirects },
-  ]
+    { href: '/admin/jobs',            label: tr.jobs,           key: 'jobs' },
+    { href: '/admin/applicants',      label: tr.applicants,     key: 'applicants' },
+    { href: '/admin/questionnaires',  label: tr.questionnaires, key: 'questionnaires' },
+    { href: '/admin/redirects',       label: tr.redirects,      key: 'redirects' },
+  ].filter(item => canSee(item.key))
 
   const planningItems = [
     { href: '/admin/shifts/plan',      label: tr.planningPlan },
@@ -169,12 +176,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isPlanningActive = pathname.includes('/admin/shifts')
 
   const systemItems = [
-    { href: '/admin/pages', label: tr.pages },
+    ...(canSee('pages') ? [{ href: '/admin/pages', label: tr.pages }] : []),
     ...(isSuperadmin ? [{ href: '/admin/users', label: tr.users }] : []),
   ]
   const isSystemActive = pathname.includes('/admin/pages') || pathname.includes('/admin/users')
 
-  // Plánovací stránka dostane celou šířku obrazovky, ať se do mřížky vejde víc dní čitelně
   const isPlanPage = pathname.includes('/admin/shifts/plan')
 
   return (
@@ -201,8 +207,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </Link>
               ))}
 
-              <DropdownNav label={tr.planning} items={planningItems} active={isPlanningActive} pathname={pathname} />
-              <DropdownNav label={tr.system} items={systemItems} active={isSystemActive} pathname={pathname} />
+              {canSee('planning') && (
+                <DropdownNav label={tr.planning} items={planningItems} active={isPlanningActive} pathname={pathname} />
+              )}
+              {systemItems.length > 0 && (
+                <DropdownNav label={tr.system} items={systemItems} active={isSystemActive} pathname={pathname} />
+              )}
             </div>
           </div>
           <div className="flex items-center gap-4">
