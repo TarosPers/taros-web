@@ -27,6 +27,29 @@ function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10)
 }
 
+// Vstup s tlačítkem na zobrazení/skrytí hesla
+function PasswordInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  const [visible, setVisible] = useState(false)
+  return (
+    <div className="relative">
+      <input
+        type={visible ? 'text' : 'password'}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="form-input pr-16"
+        placeholder={placeholder}
+      />
+      <button
+        type="button"
+        onClick={() => setVisible(v => !v)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600"
+      >
+        {visible ? 'Skrýt' : 'Zobrazit'}
+      </button>
+    </div>
+  )
+}
+
 export default function EditShiftWorkerPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -51,6 +74,9 @@ export default function EditShiftWorkerPage({ params }: { params: { id: string }
   const [newAccountEmail, setNewAccountEmail] = useState('')
   const [newAccountPassword, setNewAccountPassword] = useState('')
   const [creatingAccount, setCreatingAccount] = useState(false)
+  const [changingPassword, setChangingPassword] = useState(false)
+  const [newPasswordValue, setNewPasswordValue] = useState('')
+  const [showChangePassword, setShowChangePassword] = useState(false)
 
   const [hoursMonth, setHoursMonth] = useState<Date>(() => { const d = new Date(); d.setDate(1); return d })
   const [monthlyHours, setMonthlyHours] = useState<{ companyName: string; hours: number }[]>([])
@@ -217,168 +243,196 @@ export default function EditShiftWorkerPage({ params }: { params: { id: string }
     setCreatingAccount(false)
   }
 
+  const handleChangePassword = async () => {
+    if (!newPasswordValue) {
+      alert('Vyplňte nové heslo')
+      return
+    }
+    setChangingPassword(true)
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch('/api/admin/reset-worker-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session?.access_token}`,
+      },
+      body: JSON.stringify({ authUserId, newPassword: newPasswordValue }),
+    })
+    const result = await res.json()
+    if (!res.ok) {
+      alert('Chyba: ' + result.error)
+    } else {
+      alert('Heslo změněno. Sdělte pracovníkovi nové heslo osobně.')
+      setNewPasswordValue('')
+      setShowChangePassword(false)
+    }
+    setChangingPassword(false)
+  }
+
   const goToPrevMonth = () => { const d = new Date(hoursMonth); d.setMonth(d.getMonth() - 1); setHoursMonth(d) }
   const goToNextMonth = () => { const d = new Date(hoursMonth); d.setMonth(d.getMonth() + 1); setHoursMonth(d) }
 
   if (loading) return <div className="text-sm text-gray-400">Načítám...</div>
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-6xl">
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => router.back()} className="text-sm text-gray-400 hover:text-gray-600">← Zpět</button>
         <h1 className="text-xl font-medium" style={{ color: '#1a1a1a' }}>Upravit pracovníka</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <div className="mb-4">
-            <label className="form-label">Jméno *</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} className="form-input" required />
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-2 gap-6 items-start">
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <div className="mb-4">
+              <label className="form-label">Jméno *</label>
+              <input value={name} onChange={(e) => setName(e.target.value)} className="form-input" required />
+            </div>
+            <div className="mb-4">
+              <label className="form-label">Poznámka</label>
+              <textarea value={note} onChange={(e) => setNote(e.target.value)} className="form-input min-h-[70px] resize-none" />
+            </div>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasDrivingLicense}
+                onChange={(e) => setHasDrivingLicense(e.target.checked)}
+                className="w-4 h-4 rounded"
+                style={{ accentColor: '#2a4f2d' }}
+              />
+              <span className="text-sm text-gray-700">Má řidičský průkaz</span>
+            </label>
           </div>
-          <div className="mb-4">
-            <label className="form-label">Poznámka</label>
-            <textarea value={note} onChange={(e) => setNote(e.target.value)} className="form-input min-h-[70px] resize-none" />
-          </div>
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={hasDrivingLicense}
-              onChange={(e) => setHasDrivingLicense(e.target.checked)}
-              className="w-4 h-4 rounded"
-              style={{ accentColor: '#2a4f2d' }}
-            />
-            <span className="text-sm text-gray-700">Má řidičský průkaz</span>
-          </label>
-        </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <label className="form-label mb-2 block">Telefon</label>
-          <div className="mb-3">
-            <label className="form-label text-xs">Na volání</label>
-            <input value={phoneCall} onChange={(e) => setPhoneCall(e.target.value)} className="form-input" placeholder="+420 601 234 567" />
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <label className="form-label mb-2 block">Telefon</label>
+            <div className="mb-3">
+              <label className="form-label text-xs">Na volání</label>
+              <input value={phoneCall} onChange={(e) => setPhoneCall(e.target.value)} className="form-input" placeholder="+420 601 234 567" />
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer mb-3">
+              <input
+                type="checkbox"
+                checked={samePhone}
+                onChange={(e) => setSamePhone(e.target.checked)}
+                className="w-4 h-4 rounded"
+                style={{ accentColor: '#2a4f2d' }}
+              />
+              <span className="text-sm text-gray-700">Stejné číslo i na WhatsApp</span>
+            </label>
+            {!samePhone && (
+              <div>
+                <label className="form-label text-xs">Na WhatsApp</label>
+                <input value={phoneWhatsapp} onChange={(e) => setPhoneWhatsapp(e.target.value)} className="form-input" placeholder="+420 601 234 567" />
+              </div>
+            )}
           </div>
-          <label className="flex items-center gap-2 cursor-pointer mb-3">
-            <input
-              type="checkbox"
-              checked={samePhone}
-              onChange={(e) => setSamePhone(e.target.checked)}
-              className="w-4 h-4 rounded"
-              style={{ accentColor: '#2a4f2d' }}
-            />
-            <span className="text-sm text-gray-700">Stejné číslo i na WhatsApp</span>
-          </label>
-          {!samePhone && (
+
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <label className="form-label mb-2 block">Dostupnost směn</label>
+            <div className="mb-4">
+              <label className="form-label text-xs">Trvale nepracuje na (nastaví admin, pracovník to nemůže sám změnit)</label>
+              <div className="flex gap-4 mt-1">
+                {[{ v: 'morning', l: 'Ranní' }, { v: 'afternoon', l: 'Odpolední' }, { v: 'night', l: 'Noční' }].map(({ v, l }) => (
+                  <label key={v} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={defaultUnavailable.includes(v)}
+                      onChange={() => setDefaultUnavailable(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v])}
+                      className="w-4 h-4 rounded"
+                      style={{ accentColor: '#2a4f2d' }}
+                    />
+                    <span className="text-sm text-gray-700">{l}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
             <div>
-              <label className="form-label text-xs">Na WhatsApp</label>
-              <input value={phoneWhatsapp} onChange={(e) => setPhoneWhatsapp(e.target.value)} className="form-input" placeholder="+420 601 234 567" />
-            </div>
-          )}
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <label className="form-label mb-2 block">Dostupnost směn</label>
-          <div className="mb-4">
-            <label className="form-label text-xs">Trvale nepracuje na (nastaví admin, pracovník to nemůže sám změnit)</label>
-            <div className="flex gap-4 mt-1">
-              {[{ v: 'morning', l: 'Ranní' }, { v: 'afternoon', l: 'Odpolední' }, { v: 'night', l: 'Noční' }].map(({ v, l }) => (
-                <label key={v} className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={defaultUnavailable.includes(v)}
-                    onChange={() => setDefaultUnavailable(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v])}
-                    className="w-4 h-4 rounded"
-                    style={{ accentColor: '#2a4f2d' }}
-                  />
-                  <span className="text-sm text-gray-700">{l}</span>
-                </label>
-              ))}
+              <label className="form-label text-xs">Limit odmítnutí směn za týden (v portálu)</label>
+              <input
+                type="number"
+                min={0}
+                value={weeklyDeclineLimit}
+                onChange={(e) => setWeeklyDeclineLimit(parseInt(e.target.value) || 0)}
+                className="form-input"
+                style={{ width: '100px' }}
+              />
+              <p className="text-xs text-gray-400 mt-1">Kolikrát týdně smí pracovník v portálu označit "nemohu".</p>
             </div>
           </div>
-          <div>
-            <label className="form-label text-xs">Limit odmítnutí směn za týden (v portálu)</label>
-            <input
-              type="number"
-              min={0}
-              value={weeklyDeclineLimit}
-              onChange={(e) => setWeeklyDeclineLimit(parseInt(e.target.value) || 0)}
-              className="form-input"
-              style={{ width: '100px' }}
-            />
-            <p className="text-xs text-gray-400 mt-1">Kolikrát týdně smí pracovník v portálu označit "nemohu".</p>
+
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <label className="form-label mb-2 block">Sociální vazby – jezdí společně s</label>
+            <p className="text-xs text-gray-400 mb-3">
+              Priorita 1 = nejvyšší (nejoblíbenější řidič / nejlepší přítel), 5 = nejnižší.
+            </p>
+            {allWorkers.length === 0 ? (
+              <p className="text-xs text-gray-400">Zatím nejsou žádní další pracovníci.</p>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {allWorkers.map((w) => {
+                  const isSelected = w.id in companionPriorities
+                  return (
+                    <div key={w.id} className="flex items-center gap-3">
+                      <label className="flex items-center gap-2 cursor-pointer flex-1">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleCompanion(w.id)}
+                          className="w-4 h-4 rounded"
+                          style={{ accentColor: '#2a4f2d' }}
+                        />
+                        <span className="text-sm text-gray-700">{w.name}</span>
+                      </label>
+                      {isSelected && (
+                        <select
+                          value={companionPriorities[w.id]}
+                          onChange={(e) => setCompanionPriority(w.id, parseInt(e.target.value))}
+                          className="text-xs border border-gray-200 rounded px-2 py-1"
+                        >
+                          {[1, 2, 3, 4, 5].map(p => (
+                            <option key={p} value={p}>Priorita {p}</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <label className="form-label mb-2 block">Smí pracovat ve firmách</label>
+            {companies.length === 0 ? (
+              <p className="text-xs text-gray-400">Zatím nejsou žádné aktivní firmy.</p>
+            ) : (
+              <div className="space-y-2">
+                {companies.map((c) => (
+                  <label key={c.id} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedCompanies.includes(c.id)}
+                      onChange={() => toggleCompany(c.id)}
+                      className="w-4 h-4 rounded"
+                      style={{ accentColor: '#2a4f2d' }}
+                    />
+                    <span className="text-sm text-gray-700">{c.name}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="w-4 h-4 accent-green-700" />
+              <span className="text-sm text-gray-600">Aktivní</span>
+            </label>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <label className="form-label mb-2 block">Sociální vazby – jezdí společně s</label>
-          <p className="text-xs text-gray-400 mb-3">
-            Priorita 1 = nejvyšší (nejoblíbenější řidič / nejlepší přítel), 5 = nejnižší.
-          </p>
-          {allWorkers.length === 0 ? (
-            <p className="text-xs text-gray-400">Zatím nejsou žádní další pracovníci.</p>
-          ) : (
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {allWorkers.map((w) => {
-                const isSelected = w.id in companionPriorities
-                return (
-                  <div key={w.id} className="flex items-center gap-3">
-                    <label className="flex items-center gap-2 cursor-pointer flex-1">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleCompanion(w.id)}
-                        className="w-4 h-4 rounded"
-                        style={{ accentColor: '#2a4f2d' }}
-                      />
-                      <span className="text-sm text-gray-700">{w.name}</span>
-                    </label>
-                    {isSelected && (
-                      <select
-                        value={companionPriorities[w.id]}
-                        onChange={(e) => setCompanionPriority(w.id, parseInt(e.target.value))}
-                        className="text-xs border border-gray-200 rounded px-2 py-1"
-                      >
-                        {[1, 2, 3, 4, 5].map(p => (
-                          <option key={p} value={p}>Priorita {p}</option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <label className="form-label mb-2 block">Smí pracovat ve firmách</label>
-          {companies.length === 0 ? (
-            <p className="text-xs text-gray-400">Zatím nejsou žádné aktivní firmy.</p>
-          ) : (
-            <div className="space-y-2">
-              {companies.map((c) => (
-                <label key={c.id} className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedCompanies.includes(c.id)}
-                    onChange={() => toggleCompany(c.id)}
-                    className="w-4 h-4 rounded"
-                    style={{ accentColor: '#2a4f2d' }}
-                  />
-                  <span className="text-sm text-gray-700">{c.name}</span>
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="w-4 h-4 accent-green-700" />
-            <span className="text-sm text-gray-600">Aktivní</span>
-          </label>
-        </div>
-
-        <div className="flex gap-3">
+        <div className="flex gap-3 mt-6">
           <button type="submit" disabled={saving} className="px-6 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60" style={{ background: '#2a4f2d' }}>
             {saving ? 'Ukládám...' : 'Uložit změny'}
           </button>
@@ -388,88 +442,118 @@ export default function EditShiftWorkerPage({ params }: { params: { id: string }
         </div>
       </form>
 
-      {/* Přístup do portálu pro pracovníky */}
-      <div className="bg-white rounded-xl border border-gray-100 p-6 mt-6">
-        <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>Přístup do portálu pro pracovníky</h2>
-        {authUserId ? (
-          <div className="text-sm text-gray-600">
-            <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium mb-2" style={{ background: '#eaf3e8', color: '#2a4f2d' }}>
-              ✓ Přístup vytvořen
-            </span>
-            <p>Přihlašovací e-mail: <strong>{loginEmail}</strong></p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <p className="text-xs text-gray-400">
-              Pracovník se bude moci přihlásit na portálu, zadávat svou dostupnost a vidět svůj rozvrh směn.
-            </p>
-            <div>
-              <label className="form-label text-xs">E-mail</label>
-              <input
-                type="email"
-                value={newAccountEmail}
-                onChange={(e) => setNewAccountEmail(e.target.value)}
-                className="form-input"
-                placeholder="jana.novakova@example.com"
-              />
-            </div>
-            <div>
-              <label className="form-label text-xs">Počáteční heslo</label>
-              <input
-                type="text"
-                value={newAccountPassword}
-                onChange={(e) => setNewAccountPassword(e.target.value)}
-                className="form-input"
-                placeholder="alespoň 6 znaků"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={handleCreateAccount}
-              disabled={creatingAccount}
-              className="px-5 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60"
-              style={{ background: '#2a4f2d' }}
-            >
-              {creatingAccount ? 'Vytvářím...' : 'Vytvořit přístup'}
-            </button>
-          </div>
-        )}
-      </div>
+      <div className="grid grid-cols-2 gap-6 mt-6">
+        {/* Přístup do portálu pro pracovníky */}
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
+          <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>Přístup do portálu pro pracovníky</h2>
+          {authUserId ? (
+            <div className="text-sm text-gray-600">
+              <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium mb-2" style={{ background: '#eaf3e8', color: '#2a4f2d' }}>
+                ✓ Přístup vytvořen
+              </span>
+              <p className="mb-3">Přihlašovací e-mail: <strong>{loginEmail}</strong></p>
 
-      <div className="bg-white rounded-xl border border-gray-100 p-6 mt-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-medium" style={{ color: '#1a1a1a' }}>Odpracované hodiny (potvrzené)</h2>
-          <div className="flex items-center gap-2">
-            <button onClick={goToPrevMonth} className="text-xs px-2 py-1 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50">←</button>
-            <span className="text-xs text-gray-600" style={{ minWidth: '100px', textAlign: 'center' }}>
-              {MONTH_NAMES[hoursMonth.getMonth()]} {hoursMonth.getFullYear()}
-            </span>
-            <button onClick={goToNextMonth} className="text-xs px-2 py-1 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50">→</button>
-          </div>
+              {!showChangePassword ? (
+                <button
+                  type="button"
+                  onClick={() => setShowChangePassword(true)}
+                  className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+                >
+                  Změnit heslo
+                </button>
+              ) : (
+                <div className="space-y-2 mt-2">
+                  <label className="form-label text-xs">Nové heslo</label>
+                  <PasswordInput value={newPasswordValue} onChange={setNewPasswordValue} placeholder="alespoň 6 znaků" />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleChangePassword}
+                      disabled={changingPassword}
+                      className="px-4 py-1.5 rounded-lg text-xs font-medium text-white disabled:opacity-60"
+                      style={{ background: '#2a4f2d' }}
+                    >
+                      {changingPassword ? 'Měním...' : 'Nastavit nové heslo'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setShowChangePassword(false); setNewPasswordValue('') }}
+                      className="px-4 py-1.5 rounded-lg text-xs border border-gray-200 text-gray-500 hover:bg-gray-50"
+                    >
+                      Zrušit
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-xs text-gray-400">
+                Pracovník se bude moci přihlásit na portálu, zadávat svou dostupnost a vidět svůj rozvrh směn.
+              </p>
+              <div>
+                <label className="form-label text-xs">E-mail</label>
+                <input
+                  type="email"
+                  value={newAccountEmail}
+                  onChange={(e) => setNewAccountEmail(e.target.value)}
+                  className="form-input"
+                  placeholder="jana.novakova@example.com"
+                />
+              </div>
+              <div>
+                <label className="form-label text-xs">Počáteční heslo</label>
+                <PasswordInput value={newAccountPassword} onChange={setNewAccountPassword} placeholder="alespoň 6 znaků" />
+              </div>
+              <button
+                type="button"
+                onClick={handleCreateAccount}
+                disabled={creatingAccount}
+                className="px-5 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60"
+                style={{ background: '#2a4f2d' }}
+              >
+                {creatingAccount ? 'Vytvářím...' : 'Vytvořit přístup'}
+              </button>
+            </div>
+          )}
         </div>
 
-        {hoursLoading ? (
-          <p className="text-xs text-gray-400">Načítám...</p>
-        ) : (
-          <>
-            <div className="text-2xl font-medium mb-3" style={{ color: '#2a4f2d' }}>
-              {totalHours} h <span className="text-sm text-gray-400 font-normal">celkem</span>
+        {/* Odpracované hodiny */}
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-medium" style={{ color: '#1a1a1a' }}>Odpracované hodiny (potvrzené)</h2>
+            <div className="flex items-center gap-2">
+              <button onClick={goToPrevMonth} className="text-xs px-2 py-1 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50">←</button>
+              <span className="text-xs text-gray-600" style={{ minWidth: '100px', textAlign: 'center' }}>
+                {MONTH_NAMES[hoursMonth.getMonth()]} {hoursMonth.getFullYear()}
+              </span>
+              <button onClick={goToNextMonth} className="text-xs px-2 py-1 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50">→</button>
             </div>
-            {monthlyHours.length > 0 && (
-              <div className="space-y-1.5">
-                {monthlyHours.map((c) => (
-                  <div key={c.companyName} className="flex items-center justify-between text-xs text-gray-500">
-                    <span>{c.companyName}</span>
-                    <span className="font-medium" style={{ color: '#1a1a1a' }}>{c.hours} h</span>
-                  </div>
-                ))}
+          </div>
+
+          {hoursLoading ? (
+            <p className="text-xs text-gray-400">Načítám...</p>
+          ) : (
+            <>
+              <div className="text-2xl font-medium mb-3" style={{ color: '#2a4f2d' }}>
+                {totalHours} h <span className="text-sm text-gray-400 font-normal">celkem</span>
               </div>
-            )}
-            {monthlyHours.length === 0 && (
-              <p className="text-xs text-gray-400">Žádné potvrzené směny v tomto měsíci.</p>
-            )}
-          </>
-        )}
+              {monthlyHours.length > 0 && (
+                <div className="space-y-1.5">
+                  {monthlyHours.map((c) => (
+                    <div key={c.companyName} className="flex items-center justify-between text-xs text-gray-500">
+                      <span>{c.companyName}</span>
+                      <span className="font-medium" style={{ color: '#1a1a1a' }}>{c.hours} h</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {monthlyHours.length === 0 && (
+                <p className="text-xs text-gray-400">Žádné potvrzené směny v tomto měsíci.</p>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   )

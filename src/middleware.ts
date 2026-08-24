@@ -34,10 +34,19 @@ async function findRedirect(pathname: string): Promise<string | null> {
 
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
+  const hostname = req.headers.get('host') ?? ''
 
   const target = await findRedirect(pathname)
   if (target) {
     return NextResponse.redirect(new URL(target, req.url), 301)
+  }
+
+  // Subdoména app.taros-personal.cz - portál pro pracovníky, vždy interně /cs/portal/...
+  if (hostname.startsWith('app.')) {
+    const url = req.nextUrl.clone()
+    const rest = pathname === '/' ? '' : pathname
+    url.pathname = `/cs/portal${rest}`
+    return NextResponse.rewrite(url)
   }
 
   // Admin sekce: jazyk textů řídí přihlášený uživatel (user_metadata.lang),
@@ -45,6 +54,13 @@ export default async function middleware(req: NextRequest) {
   // omylem přesměruje /admin/... na /de/admin/..., což v adminu nemá
   // žádný efekt a jen matoucím způsobem mění adresu.
   if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    const url = req.nextUrl.clone()
+    url.pathname = `/cs${pathname}`
+    return NextResponse.rewrite(url)
+  }
+
+  // Portál pro pracovníky (i na hlavní doméně, pro testování): stejné obejití jako u adminu
+  if (pathname === '/portal' || pathname.startsWith('/portal/')) {
     const url = req.nextUrl.clone()
     url.pathname = `/cs${pathname}`
     return NextResponse.rewrite(url)
