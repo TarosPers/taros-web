@@ -42,9 +42,13 @@ export default async function middleware(req: NextRequest) {
   }
 
   // Subdoména app.taros-personal.cz - portál pro pracovníky, vždy interně /cs/portal/...
+  // (chytře nepřidává "/portal" podruhé, pokud ho návštěvník už zadal ručně)
   if (hostname.startsWith('app.')) {
     const url = req.nextUrl.clone()
-    const rest = pathname === '/' ? '' : pathname
+    const alreadyHasPortalPrefix = pathname === '/portal' || pathname.startsWith('/portal/')
+    const rest = alreadyHasPortalPrefix
+      ? pathname.slice('/portal'.length)
+      : (pathname === '/' ? '' : pathname)
     url.pathname = `/cs/portal${rest}`
     return NextResponse.rewrite(url)
   }
