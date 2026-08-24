@@ -40,6 +40,8 @@ export default function EditShiftWorkerPage({ params }: { params: { id: string }
   const [phoneCall, setPhoneCall] = useState('')
   const [phoneWhatsapp, setPhoneWhatsapp] = useState('')
   const [samePhone, setSamePhone] = useState(true)
+  const [weeklyDeclineLimit, setWeeklyDeclineLimit] = useState(999)
+  const [defaultUnavailable, setDefaultUnavailable] = useState<string[]>([])
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([])
   const [companionPriorities, setCompanionPriorities] = useState<Record<string, number>>({})
 
@@ -73,6 +75,8 @@ export default function EditShiftWorkerPage({ params }: { params: { id: string }
         setPhoneCall(worker.phone_call ?? '')
         setPhoneWhatsapp(worker.phone_whatsapp ?? '')
         setSamePhone(!worker.phone_whatsapp || worker.phone_whatsapp === worker.phone_call)
+        setWeeklyDeclineLimit(worker.weekly_decline_limit ?? 999)
+        setDefaultUnavailable(worker.default_unavailable_shift_types ?? [])
         setAuthUserId(worker.auth_user_id ?? null)
         setLoginEmail(worker.login_email ?? null)
       }
@@ -154,6 +158,8 @@ export default function EditShiftWorkerPage({ params }: { params: { id: string }
       has_driving_license: hasDrivingLicense,
       phone_call: phoneCall || null,
       phone_whatsapp: samePhone ? (phoneCall || null) : (phoneWhatsapp || null),
+      weekly_decline_limit: weeklyDeclineLimit,
+      default_unavailable_shift_types: defaultUnavailable,
     }).eq('id', params.id)
 
     if (error) {
@@ -267,6 +273,39 @@ export default function EditShiftWorkerPage({ params }: { params: { id: string }
               <input value={phoneWhatsapp} onChange={(e) => setPhoneWhatsapp(e.target.value)} className="form-input" placeholder="+420 601 234 567" />
             </div>
           )}
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-100 p-6">
+          <label className="form-label mb-2 block">Dostupnost směn</label>
+          <div className="mb-4">
+            <label className="form-label text-xs">Trvale nepracuje na (nastaví admin, pracovník to nemůže sám změnit)</label>
+            <div className="flex gap-4 mt-1">
+              {[{ v: 'morning', l: 'Ranní' }, { v: 'afternoon', l: 'Odpolední' }, { v: 'night', l: 'Noční' }].map(({ v, l }) => (
+                <label key={v} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={defaultUnavailable.includes(v)}
+                    onChange={() => setDefaultUnavailable(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v])}
+                    className="w-4 h-4 rounded"
+                    style={{ accentColor: '#2a4f2d' }}
+                  />
+                  <span className="text-sm text-gray-700">{l}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="form-label text-xs">Limit odmítnutí směn za týden (v portálu)</label>
+            <input
+              type="number"
+              min={0}
+              value={weeklyDeclineLimit}
+              onChange={(e) => setWeeklyDeclineLimit(parseInt(e.target.value) || 0)}
+              className="form-input"
+              style={{ width: '100px' }}
+            />
+            <p className="text-xs text-gray-400 mt-1">Kolikrát týdně smí pracovník v portálu označit "nemohu".</p>
+          </div>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-6">
