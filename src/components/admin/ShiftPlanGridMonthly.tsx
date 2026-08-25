@@ -422,6 +422,11 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
                                 fontWeight: assignedDept ? 600 : 400,
                                 border: assignment?.confirmed ? '1px solid #2a4f2d' : '1px solid transparent',
                                 borderRadius: '3px',
+                                appearance: 'none',
+                                WebkitAppearance: 'none',
+                                MozAppearance: 'none',
+                                textAlign: 'center',
+                                textAlignLast: 'center',
                               }}
                               title={assignment?.confirmed ? 'Potvrzeno' : undefined}
                             >
