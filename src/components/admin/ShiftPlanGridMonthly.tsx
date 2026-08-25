@@ -263,6 +263,16 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
 
   return (
     <div>
+      <style jsx>{`
+        input[type='number']::-webkit-inner-spin-button,
+        input[type='number']::-webkit-outer-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        input[type='number'] {
+          -moz-appearance: textfield;
+        }
+      `}</style>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <button
           onClick={confirmAll}
@@ -346,7 +356,7 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
                                 defaultValue={getRequirement(dept.id, date, s)}
                                 onBlur={(e) => updateRequirement(dept.id, date, s, parseInt(e.target.value) || 0)}
                                 className="border-0 text-center bg-transparent"
-                                style={{ width: cellWidth - 4, fontSize: '10px', padding: '2px 0' }}
+                                style={{ width: cellWidth, fontSize: '10px', padding: '2px 0' }}
                               />
                             ) : (
                               <div style={{ height: '20px', background: '#fafafa' }} />
