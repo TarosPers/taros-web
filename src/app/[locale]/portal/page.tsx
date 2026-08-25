@@ -29,7 +29,6 @@ function getMonday(date: Date): Date {
   d.setHours(0, 0, 0, 0)
   return d
 }
-// Klíč týdne (pondělí dané date) - pro rozlišení limitu po týdnech
 function weekKey(d: Date): string {
   return formatDate(getMonday(d))
 }
@@ -111,18 +110,26 @@ export default function PortalHomePage() {
     setAvailability(data ?? [])
   }, [worker])
 
-  const toggleAvailability = async (date: string, shiftType: string, weekCount: number, weekLimit: number) => {
+  const toggleAvailability = async (date: string, shiftType: string) => {
     if (!worker) return
     const existing = availability.find(a => a.date === date && a.shift_type === shiftType)
 
     if (existing) {
       await supabase.from('shift_worker_availability').delete().eq('id', existing.id)
-    } else {
-      if (weekCount >= weekLimit) {
-        alert(`Vyčerpali jste limit ${weekLimit} odmítnutí pro tento týden.`)
-        return
+      reloadAvailability()
+      return
+    }
+
+    const { error } = await supabase
+      .from('shift_worker_availability')
+      .insert({ worker_id: worker.id, date, shift_type: shiftType })
+
+    if (error) {
+      if (error.message.includes('weekly_decline_limit_reached')) {
+        alert(`Vyčerpali jste limit ${worker.weekly_decline_limit} odmítnutí pro tento týden.`)
+      } else {
+        alert('Chyba: ' + error.message)
       }
-      await supabase.from('shift_worker_availability').insert({ worker_id: worker.id, date, shift_type: shiftType })
     }
     reloadAvailability()
   }
@@ -132,14 +139,13 @@ export default function PortalHomePage() {
 
   // 2 týdny dopředu (aktuální + příští), pondělí-neděle
   const thisMonday = getMonday(new Date())
-  const days: Date[] = []
+  const weeks: Date[][] = [[], []]
   for (let i = 0; i < 14; i++) {
     const d = new Date(thisMonday)
     d.setDate(d.getDate() + i)
-    days.push(d)
+    weeks[Math.floor(i / 7)].push(d)
   }
 
-  // Počet ad-hoc (netrvalých) odmítnutí za týden
   const weekCounts: Record<string, number> = {}
   availability.forEach(a => {
     const wk = weekKey(new Date(a.date))
@@ -202,56 +208,64 @@ export default function PortalHomePage() {
           <p className="text-xs text-gray-400 mb-4">
             Označte směny, na které nemůžete nastoupit. Trvale nedostupné směny (nastavené adminem) jsou vždy zaškrtnuté a nelze je změnit.
           </p>
-          <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="border-b border-gray-50">
-                <tr>
-                  <th className="text-left px-4 py-2 text-xs font-medium text-gray-400">Den</th>
-                  {SHIFT_TYPES.map(s => (
-                    <th key={s} className="text-center px-2 py-2 text-xs font-medium text-gray-400">{SHIFT_LABELS[s]}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {days.map((d, idx) => {
-                  const date = formatDate(d)
-                  const wk = weekKey(d)
-                  const weekCount = weekCounts[wk] ?? 0
-                  const isNewWeek = idx === 0 || weekKey(days[idx - 1]) !== wk
-                  return (
-                    <tr key={date}>
-                      <td className="px-4 py-2 text-xs" style={{ borderTop: isNewWeek && idx > 0 ? '2px solid #e5e7eb' : undefined }}>
-                        <div style={{ color: '#1a1a1a' }}>{formatDayLabel(d)}</div>
-                        {isNewWeek && (
-                          <div className="text-gray-400 mt-0.5">
-                            zbývá {Math.max(worker.weekly_decline_limit - weekCount, 0)}/{worker.weekly_decline_limit}
-                          </div>
-                        )}
-                      </td>
-                      {SHIFT_TYPES.map(shiftType => {
-                        const isPermanent = worker.default_unavailable_shift_types.includes(shiftType)
-                        const isMarked = availability.some(a => a.date === date && a.shift_type === shiftType)
-                        const limitReached = weekCount >= worker.weekly_decline_limit
+
+          {weeks.map((weekDays, weekIdx) => {
+            const wk = weekKey(weekDays[0])
+            const weekCount = weekCounts[wk] ?? 0
+            const remaining = Math.max(worker.weekly_decline_limit - weekCount, 0)
+
+            return (
+              <div key={wk} className="mb-4">
+                <div
+                  className="flex items-center justify-between px-4 py-2.5 rounded-t-xl text-xs font-medium"
+                  style={{ background: '#eaf3e8', color: '#2a4f2d' }}
+                >
+                  <span>Týden {formatDayLabel(weekDays[0])} – {formatDayLabel(weekDays[6])}</span>
+                  <span>Zbývá odmítnutí: {remaining} / {worker.weekly_decline_limit}</span>
+                </div>
+                <div className="bg-white rounded-b-xl border border-gray-100 overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="border-b border-gray-50">
+                      <tr>
+                        <th className="text-left px-4 py-2 text-xs font-medium text-gray-400">Den</th>
+                        {SHIFT_TYPES.map(s => (
+                          <th key={s} className="text-center px-2 py-2 text-xs font-medium text-gray-400">{SHIFT_LABELS[s]}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {weekDays.map((d) => {
+                        const date = formatDate(d)
                         return (
-                          <td key={shiftType} className="text-center px-2 py-2" style={{ borderTop: isNewWeek && idx > 0 ? '2px solid #e5e7eb' : undefined }}>
-                            <input
-                              type="checkbox"
-                              checked={isPermanent || isMarked}
-                              disabled={isPermanent || (!isMarked && limitReached)}
-                              onChange={() => toggleAvailability(date, shiftType, weekCount, worker.weekly_decline_limit)}
-                              className="w-4 h-4 rounded"
-                              style={{ accentColor: isPermanent ? '#9ca3af' : '#ef4444' }}
-                              title={isPermanent ? 'Trvale nedostupné (nastaveno adminem)' : undefined}
-                            />
-                          </td>
+                          <tr key={date}>
+                            <td className="px-4 py-2 text-xs" style={{ color: '#1a1a1a' }}>{formatDayLabel(d)}</td>
+                            {SHIFT_TYPES.map(shiftType => {
+                              const isPermanent = worker.default_unavailable_shift_types.includes(shiftType)
+                              const isMarked = availability.some(a => a.date === date && a.shift_type === shiftType)
+                              const limitReached = weekCount >= worker.weekly_decline_limit
+                              return (
+                                <td key={shiftType} className="text-center px-2 py-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={isPermanent || isMarked}
+                                    disabled={isPermanent || (!isMarked && limitReached)}
+                                    onChange={() => toggleAvailability(date, shiftType)}
+                                    className="w-4 h-4 rounded"
+                                    style={{ accentColor: isPermanent ? '#9ca3af' : '#ef4444' }}
+                                    title={isPermanent ? 'Trvale nedostupné (nastaveno adminem)' : undefined}
+                                  />
+                                </td>
+                              )
+                            })}
+                          </tr>
                         )
                       })}
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
