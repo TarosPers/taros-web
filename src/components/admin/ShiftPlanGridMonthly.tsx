@@ -109,10 +109,10 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
 
     const MAIN_PADDING = 32   // <main className="px-4"> = 16px na každé straně
     const CARD_PADDING = 16   // karta s tabulkou má p-2 = 8px na každé straně
-    const BORDER_BUFFER = 4
+    const EXTRA_SAFETY = 60   // svislý posuvník stránky, rámečky, zaokrouhlování - raději rezerva navíc
 
     const recalc = () => {
-      const available = window.innerWidth - MAIN_PADDING - CARD_PADDING - BORDER_BUFFER - LABEL_WIDTH
+      const available = window.innerWidth - MAIN_PADDING - CARD_PADDING - EXTRA_SAFETY - LABEL_WIDTH
       const perCell = Math.floor(available / (VISIBLE_DAYS * shiftTypes.length))
       setCellWidth(Math.max(MIN_CELL_WIDTH, perCell))
     }
