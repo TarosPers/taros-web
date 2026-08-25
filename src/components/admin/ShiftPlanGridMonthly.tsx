@@ -233,8 +233,8 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
 
   const cellWidth = 34
   const labelWidth = 170
-  // Omezit viditelnou šířku na 8 sloupců (jako u týdenního pohledu) - zbytek za posuvníkem
-  const visibleWidth = labelWidth + 8 * cellWidth + 8
+  // Omezit viditelnou šířku na 8 celých DNÍ (jako u týdenního pohledu) - zbytek měsíce za posuvníkem
+  const visibleWidth = labelWidth + 8 * shiftTypes.length * cellWidth + 8
   const unconfirmedCount = assignments.filter(a => a.company_id === companyId && !a.confirmed).length
 
   return (
