@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -74,6 +74,10 @@ function getMonthDays(anchorMonth: Date): Date[] {
   return days
 }
 
+const LABEL_WIDTH = 170
+const MIN_CELL_WIDTH = 26
+const VISIBLE_DAYS = 8
+
 export default function ShiftPlanGridMonthly({ companyId }: { companyId: string }) {
   const [loading, setLoading] = useState(true)
   const [confirming, setConfirming] = useState(false)
@@ -89,10 +93,34 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
     return d
   })
 
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [cellWidth, setCellWidth] = useState(MIN_CELL_WIDTH)
+
   const days = getMonthDays(anchorMonth)
   const rangeStart = formatDate(days[0])
   const rangeEnd = formatDate(days[days.length - 1])
   const shiftTypes = company?.shift_types ?? []
+
+  // Dynamicky spočítat šířku buňky podle skutečné šířky okna prohlížeče,
+  // ať se do dostupné šířky vejde přesně 8 celých dní.
+  // Počítáno přímo z window.innerWidth (spolehlivější než měření vnořeného elementu).
+  useEffect(() => {
+    if (shiftTypes.length === 0) return
+
+    const MAIN_PADDING = 32   // <main className="px-4"> = 16px na každé straně
+    const CARD_PADDING = 16   // karta s tabulkou má p-2 = 8px na každé straně
+    const BORDER_BUFFER = 4
+
+    const recalc = () => {
+      const available = window.innerWidth - MAIN_PADDING - CARD_PADDING - BORDER_BUFFER - LABEL_WIDTH
+      const perCell = Math.floor(available / (VISIBLE_DAYS * shiftTypes.length))
+      setCellWidth(Math.max(MIN_CELL_WIDTH, perCell))
+    }
+
+    recalc()
+    window.addEventListener('resize', recalc)
+    return () => window.removeEventListener('resize', recalc)
+  }, [shiftTypes.length])
 
   useEffect(() => {
     const load = async () => {
@@ -231,10 +259,6 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
   if (loading) return <div className="text-sm text-gray-400">Načítám...</div>
   if (!company) return <div className="text-sm text-gray-400">Firma nenalezena</div>
 
-  const cellWidth = 34
-  const labelWidth = 170
-  // Omezit viditelnou šířku na 8 celých DNÍ (jako u týdenního pohledu) - zbytek měsíce za posuvníkem
-  const visibleWidth = labelWidth + 8 * shiftTypes.length * cellWidth + 8
   const unconfirmedCount = assignments.filter(a => a.company_id === companyId && !a.confirmed).length
 
   return (
@@ -265,11 +289,11 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
           <p className="text-gray-400 text-sm">Nejdřív založte alespoň jeden provoz pro tuto firmu.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-100 p-2 overflow-x-auto" style={{ maxWidth: `${visibleWidth}px` }}>
+        <div ref={containerRef} className="bg-white rounded-xl border border-gray-100 p-2 overflow-x-auto w-full">
           <table style={{ borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th className="sticky left-0 bg-white z-20" style={{ minWidth: labelWidth, width: labelWidth }} rowSpan={2}></th>
+                <th className="sticky left-0 bg-white z-20" style={{ minWidth: LABEL_WIDTH, width: LABEL_WIDTH }} rowSpan={2}></th>
                 {days.map((d) => (
                   <th
                     key={formatDate(d)}
@@ -301,7 +325,7 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
                 const deptShifts = effectiveShiftTypes(dept)
                 return (
                   <tr key={dept.id} className="border-b border-gray-50">
-                    <td className="sticky left-0 bg-white z-10 px-2 py-1" style={{ minWidth: labelWidth, width: labelWidth }}>
+                    <td className="sticky left-0 bg-white z-10 px-2 py-1" style={{ minWidth: LABEL_WIDTH, width: LABEL_WIDTH }}>
                       <div className="flex items-center gap-1.5">
                         <span className="rounded-full flex-shrink-0" style={{ width: '8px', height: '8px', background: dept.color }} />
                         <span className="text-xs font-medium truncate" style={{ color: '#1a1a1a' }} title={dept.name}>
@@ -341,7 +365,7 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
                 { label: 'Zbývá',   fn: (date: string, s: string) => getPotreba(date, s) - getMam(date, s), style: { fontWeight: 600 } },
               ].map(({ label, fn, style }) => (
                 <tr key={label} style={{ background: '#f2f8f1' }} className="border-b border-gray-100">
-                  <td className="sticky left-0 z-10 px-2 py-1 text-xs font-semibold" style={{ minWidth: labelWidth, width: labelWidth, background: '#f2f8f1', color: '#1a1a1a' }}>
+                  <td className="sticky left-0 z-10 px-2 py-1 text-xs font-semibold" style={{ minWidth: LABEL_WIDTH, width: LABEL_WIDTH, background: '#f2f8f1', color: '#1a1a1a' }}>
                     {label}
                   </td>
                   {days.map((d) => {
@@ -366,7 +390,7 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
 
               {workers.map((worker) => (
                 <tr key={worker.id} className="border-b border-gray-50">
-                  <td className="sticky left-0 bg-white z-10 px-2 py-1" style={{ minWidth: labelWidth, width: labelWidth }}>
+                  <td className="sticky left-0 bg-white z-10 px-2 py-1" style={{ minWidth: LABEL_WIDTH, width: LABEL_WIDTH }}>
                     <span className="text-xs truncate" style={{ color: '#374151' }} title={worker.name}>{worker.name}</span>
                   </td>
                   {days.map((d) => {
