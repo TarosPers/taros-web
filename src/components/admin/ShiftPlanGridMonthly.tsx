@@ -25,7 +25,6 @@ interface Company {
   id: string
   name: string
   shift_types: string[]
-  shift_times: ShiftTimes
 }
 
 interface Department {
@@ -35,7 +34,6 @@ interface Department {
   color: string
   active: boolean
   shift_types: string[] | null
-  shift_times: ShiftTimes | null
 }
 
 interface Worker {
@@ -74,16 +72,6 @@ function getMonthDays(anchorMonth: Date): Date[] {
     days.push(new Date(year, month, d))
   }
   return days
-}
-
-// Vypočítá délku směny v hodinách ze začátku/konce "HH:MM" (zohledňuje noční směnu přes půlnoc)
-function calcHours(start?: string, end?: string): number {
-  if (!start || !end) return 0
-  const [sh, sm] = start.split(':').map(Number)
-  const [eh, em] = end.split(':').map(Number)
-  let diff = (eh * 60 + em) - (sh * 60 + sm)
-  if (diff <= 0) diff += 24 * 60
-  return Math.round((diff / 60) * 100) / 100
 }
 
 export default function ShiftPlanGridMonthly({ companyId }: { companyId: string }) {
@@ -157,7 +145,7 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
   }, [loadRangeData])
 
   const effectiveShiftTypes = (dept: Department) => dept.shift_types ?? shiftTypes
-  const effectiveShiftTimes = (dept: Department) => dept.shift_times ?? company?.shift_times ?? {}
+  const effectiveShiftTimes = (dept: Department): ShiftTimes => (dept as any).shift_times ?? (company as any)?.shift_times ?? {}
 
   const getRequirement = (deptId: string, date: string, shiftType: string) =>
     requirements.find(r => r.department_id === deptId && r.date === date && r.shift_type === shiftType)?.required_count ?? 0
@@ -217,6 +205,15 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
     setConfirming(true)
     const nowIso = new Date().toISOString()
 
+    function calcHours(start?: string, end?: string): number {
+      if (!start || !end) return 0
+      const [sh, sm] = start.split(':').map(Number)
+      const [eh, em] = end.split(':').map(Number)
+      let diff = (eh * 60 + em) - (sh * 60 + sm)
+      if (diff <= 0) diff += 24 * 60
+      return Math.round((diff / 60) * 100) / 100
+    }
+
     await Promise.all(toConfirm.map(a => {
       const dept = departments.find(d => d.id === a.department_id)
       const times = dept ? effectiveShiftTimes(dept)[a.shift_type] : undefined
@@ -236,6 +233,8 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
 
   const cellWidth = 34
   const labelWidth = 170
+  // Omezit viditelnou šířku na 8 sloupců (jako u týdenního pohledu) - zbytek za posuvníkem
+  const visibleWidth = labelWidth + 8 * cellWidth + 8
   const unconfirmedCount = assignments.filter(a => a.company_id === companyId && !a.confirmed).length
 
   return (
@@ -266,7 +265,7 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
           <p className="text-gray-400 text-sm">Nejdřív založte alespoň jeden provoz pro tuto firmu.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-100 p-2 overflow-x-auto">
+        <div className="bg-white rounded-xl border border-gray-100 p-2 overflow-x-auto" style={{ maxWidth: `${visibleWidth}px` }}>
           <table style={{ borderCollapse: 'collapse' }}>
             <thead>
               <tr>
