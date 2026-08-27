@@ -454,7 +454,12 @@ export default function ShiftPlanGridMonthly({
                       const options = departments.filter(dep => {
                         if (!effectiveShiftTypes(dep).includes(s)) return false
                         if (allowedDepts !== null && allowedDepts !== undefined && !allowedDepts.includes(dep.id)) return false
-                        return true
+                        // Vždy nabídnout aktuálně vybraný provoz (i kdyby mezitím "zaplnil" kapacitu)
+                        if (assignment?.department_id === dep.id) return true
+                        // Nabídnout jen provozy, které ještě mají volné místo (potřeba > už obsazeno)
+                        const required = getRequirement(dep.id, date, s)
+                        const assignedCount = assignments.filter(a => a.department_id === dep.id && a.date === date && a.shift_type === s).length
+                        return assignedCount < required
                       })
                       const assignedDept = assignment ? departments.find(dep => dep.id === assignment.department_id) : null
 
