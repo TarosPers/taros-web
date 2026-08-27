@@ -58,6 +58,25 @@ interface RawAssignment {
   confirmed: boolean
 }
 
+interface WorkerInterval {
+  date: string
+  shift_type: string
+  start: Date
+  end: Date
+}
+
+// Minimální zákonná přestávka mezi směnami (Arbeitszeitgesetz)
+const MIN_REST_HOURS = 11
+
+function computeInterval(dateStr: string, shiftType: string, times: ShiftTimes | undefined): { start: Date; end: Date } | null {
+  const t = times?.[shiftType]
+  if (!t) return null
+  const start = new Date(`${dateStr}T${t.start}:00`)
+  let end = new Date(`${dateStr}T${t.end}:00`)
+  if (end <= start) end = new Date(end.getTime() + 24 * 60 * 60 * 1000) // směna přes půlnoc
+  return { start, end }
+}
+
 function formatDate(d: Date): string {
   return d.toISOString().slice(0, 10)
 }
@@ -96,6 +115,7 @@ export default function ShiftPlanGridMonthly({
   const [workerDeptEligibility, setWorkerDeptEligibility] = useState<Record<string, string[] | null>>({})
   const [requirements, setRequirements] = useState<Requirement[]>([])
   const [assignments, setAssignments] = useState<RawAssignment[]>([])
+  const [workerIntervals, setWorkerIntervals] = useState<Record<string, WorkerInterval[]>>({})
   const [anchorMonth, setAnchorMonth] = useState<Date>(() => {
     const d = initialDate ? new Date(initialDate) : new Date()
     d.setDate(1)
@@ -187,11 +207,18 @@ export default function ShiftPlanGridMonthly({
     if (!company) return
     const deptIds = departments.map(d => d.id)
 
-    const [{ data: reqData }, { data: allAssignments }] = await Promise.all([
+    // Rozšířený rozsah (+-1 den) napříč VŠEMI firmami - kvůli kontrole zákonné pauzy na hranicích měsíce
+    const extStartDate = new Date(days[0]); extStartDate.setDate(extStartDate.getDate() - 1)
+    const extEndDate = new Date(days[days.length - 1]); extEndDate.setDate(extEndDate.getDate() + 1)
+    const extRangeStart = formatDate(extStartDate)
+    const extRangeEnd = formatDate(extEndDate)
+
+    const [{ data: reqData }, { data: allAssignments }, { data: extAssignments }] = await Promise.all([
       deptIds.length > 0
         ? supabase.from('shift_requirements').select('department_id, date, shift_type, required_count').in('department_id', deptIds).gte('date', rangeStart).lte('date', rangeEnd)
         : Promise.resolve({ data: [] }),
       supabase.from('shift_assignments').select('id, worker_id, department_id, date, shift_type, confirmed, shift_departments(company_id)').gte('date', rangeStart).lte('date', rangeEnd),
+      supabase.from('shift_assignments').select('worker_id, date, shift_type, department_id').gte('date', extRangeStart).lte('date', extRangeEnd),
     ])
 
     setRequirements(reqData ?? [])
@@ -207,6 +234,29 @@ export default function ShiftPlanGridMonthly({
         confirmed: a.confirmed ?? false,
       }))
     )
+
+    // Dopočítat časové intervaly směn napříč firmami pro kontrolu zákonné pauzy
+    const extDeptIds = [...new Set((extAssignments ?? []).map((a: any) => a.department_id))]
+    let deptTimesMap: Record<string, ShiftTimes> = {}
+    if (extDeptIds.length > 0) {
+      const { data: deptTimesData } = await supabase
+        .from('shift_departments')
+        .select('id, shift_times, shift_companies(shift_times)')
+        .in('id', extDeptIds)
+      ;(deptTimesData ?? []).forEach((d: any) => {
+        deptTimesMap[d.id] = d.shift_times ?? d.shift_companies?.shift_times ?? {}
+      })
+    }
+
+    const intervals: Record<string, WorkerInterval[]> = {}
+    ;(extAssignments ?? []).forEach((a: any) => {
+      const times = deptTimesMap[a.department_id]
+      const interval = computeInterval(a.date, a.shift_type, times)
+      if (!interval) return
+      if (!intervals[a.worker_id]) intervals[a.worker_id] = []
+      intervals[a.worker_id].push({ date: a.date, shift_type: a.shift_type, start: interval.start, end: interval.end })
+    })
+    setWorkerIntervals(intervals)
   }, [company, departments, rangeStart, rangeEnd])
 
   useEffect(() => {
@@ -240,6 +290,28 @@ export default function ShiftPlanGridMonthly({
 
   const getWorkerAssignment = (workerId: string, date: string, shiftType: string) =>
     assignments.find(a => a.worker_id === workerId && a.date === date && a.shift_type === shiftType)
+
+  // Zjistí, jestli by přiřazení pracovníka do daného provozu na (date, shiftType)
+  // porušilo zákonnou pauzu vůči jeho ostatním směnám (napříč firmami)
+  const isRestViolation = (workerId: string, date: string, shiftType: string, deptId: string): boolean => {
+    const dept = departments.find(d => d.id === deptId)
+    if (!dept) return false
+    const candidate = computeInterval(date, shiftType, effectiveShiftTimes(dept))
+    if (!candidate) return false
+    const intervals = (workerIntervals[workerId] ?? []).filter(iv => !(iv.date === date && iv.shift_type === shiftType))
+    for (const iv of intervals) {
+      if (candidate.start < iv.end && iv.start < candidate.end) return true // překryv
+      if (candidate.start >= iv.end) {
+        const restHours = (candidate.start.getTime() - iv.end.getTime()) / 3600000
+        if (restHours < MIN_REST_HOURS) return true
+      }
+      if (iv.start >= candidate.end) {
+        const restHours = (iv.start.getTime() - candidate.end.getTime()) / 3600000
+        if (restHours < MIN_REST_HOURS) return true
+      }
+    }
+    return false
+  }
 
   const selectDeptForWorkerCell = async (workerId: string, date: string, shiftType: string, deptId: string) => {
     const existing = getWorkerAssignment(workerId, date, shiftType)
@@ -294,8 +366,13 @@ export default function ShiftPlanGridMonthly({
     loadRangeData()
   }
 
-  const goToPrevMonth = () => { const d = new Date(anchorMonth); d.setMonth(d.getMonth() - 1); setAnchorMonth(d); onDateChange?.(d) }
-  const goToNextMonth = () => { const d = new Date(anchorMonth); d.setMonth(d.getMonth() + 1); setAnchorMonth(d); onDateChange?.(d) }
+  const goToPrevMonth = () => { const d = new Date(anchorMonth); d.setMonth(d.getMonth() - 1); setAnchorMonth(d) }
+  const goToNextMonth = () => { const d = new Date(anchorMonth); d.setMonth(d.getMonth() + 1); setAnchorMonth(d) }
+
+  // Průběžně hlásit rodičovské komponentě aktuální zobrazenou pozici (i bez navigace tlačítky)
+  useEffect(() => {
+    onDateChange?.(anchorMonth)
+  }, [anchorMonth])
 
   if (loading) return <div className="text-sm text-gray-400">Načítám...</div>
   if (!company) return <div className="text-sm text-gray-400">Firma nenalezena</div>
@@ -333,6 +410,8 @@ export default function ShiftPlanGridMonthly({
       </div>
       <p className="text-xs text-gray-400 mb-4">
         Potvrzením se pro nepotvrzené směny spočítají a zapíší odpracované hodiny na kartu pracovníka. Pokud po potvrzení směnu změníte, je potřeba potvrdit znovu.
+        <br />
+        <span style={{ color: '#ef4444' }}>⚠ = porušená zákonná pauza {MIN_REST_HOURS}h mezi směnami</span>
       </p>
 
       {departments.length === 0 ? (
@@ -462,6 +541,12 @@ export default function ShiftPlanGridMonthly({
                         return assignedCount < required
                       })
                       const assignedDept = assignment ? departments.find(dep => dep.id === assignment.department_id) : null
+                      const currentViolation = assignment ? isRestViolation(worker.id, date, s, assignment.department_id) : false
+                      const optionsWithViolation = options.map(dep => ({ dep, violation: isRestViolation(worker.id, date, s, dep.id) }))
+                      const sortedOptions = [
+                        ...optionsWithViolation.filter(o => !o.violation),
+                        ...optionsWithViolation.filter(o => o.violation),
+                      ]
 
                       return (
                         <td key={`${date}-${s}`} className="text-center" style={{ width: cellWidth, minWidth: cellWidth, borderLeft: i === 0 ? '1px solid #e5e7eb' : undefined }}>
@@ -479,10 +564,10 @@ export default function ShiftPlanGridMonthly({
                                 width: cellWidth,
                                 fontSize: '9px',
                                 padding: '2px 0',
-                                background: assignedDept ? assignedDept.color + '33' : 'transparent',
-                                color: assignedDept ? assignedDept.color : '#9ca3af',
+                                background: currentViolation ? '#fef2f2' : assignedDept ? assignedDept.color + '33' : 'transparent',
+                                color: currentViolation ? '#ef4444' : assignedDept ? assignedDept.color : '#9ca3af',
                                 fontWeight: assignedDept ? 600 : 400,
-                                border: assignment?.confirmed ? '1px solid #2a4f2d' : '1px solid transparent',
+                                border: currentViolation ? '1px solid #ef4444' : assignment?.confirmed ? '1px solid #2a4f2d' : '1px solid transparent',
                                 borderRadius: '3px',
                                 appearance: 'none',
                                 WebkitAppearance: 'none',
@@ -490,11 +575,13 @@ export default function ShiftPlanGridMonthly({
                                 textAlign: 'center',
                                 textAlignLast: 'center',
                               }}
-                              title={assignment?.confirmed ? 'Potvrzeno' : undefined}
+                              title={currentViolation ? `Pozor: porušena zákonná pauza ${MIN_REST_HOURS}h mezi směnami` : assignment?.confirmed ? 'Potvrzeno' : undefined}
                             >
                               <option value="">–</option>
-                              {options.map(dep => (
-                                <option key={dep.id} value={dep.id}>{dep.abbreviation || dep.name}</option>
+                              {sortedOptions.map(({ dep, violation }) => (
+                                <option key={dep.id} value={dep.id} style={{ color: violation ? '#ef4444' : 'inherit' }}>
+                                  {violation ? '⚠ ' : ''}{dep.abbreviation || dep.name}
+                                </option>
                               ))}
                             </select>
                           )}

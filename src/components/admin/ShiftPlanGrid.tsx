@@ -138,6 +138,12 @@ export default function ShiftPlanGrid({
   const [workerIntervals, setWorkerIntervals] = useState<Record<string, WorkerInterval[]>>({})
   const [anchorMonday, setAnchorMonday] = useState<Date>(() => getMonday(initialDate ?? new Date()))
 
+  // Průběžně hlásit rodičovské komponentě aktuální zobrazenou pozici (i bez navigace tlačítky),
+  // ať se pozice správně přenese při přepnutí na měsíční pohled.
+  useEffect(() => {
+    onDateChange?.(anchorMonday)
+  }, [anchorMonday])
+
   const days: Date[] = []
   const prevSunday = new Date(anchorMonday)
   prevSunday.setDate(prevSunday.getDate() - 1)
@@ -429,7 +435,7 @@ export default function ShiftPlanGrid({
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => { const d = new Date(anchorMonday); d.setDate(d.getDate() - 7); setAnchorMonday(d); onDateChange?.(d) }}
+            onClick={() => { const d = new Date(anchorMonday); d.setDate(d.getDate() - 7); setAnchorMonday(d) }}
             className="text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50"
           >
             ← Předchozí
@@ -438,7 +444,7 @@ export default function ShiftPlanGrid({
             {formatDayLabel(days[0])} – {formatDayLabel(days[days.length - 1])}
           </span>
           <button
-            onClick={() => { const d = new Date(anchorMonday); d.setDate(d.getDate() + 7); setAnchorMonday(d); onDateChange?.(d) }}
+            onClick={() => { const d = new Date(anchorMonday); d.setDate(d.getDate() + 7); setAnchorMonday(d) }}
             className="text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50"
           >
             Další →
