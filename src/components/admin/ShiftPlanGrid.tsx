@@ -120,6 +120,8 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
   const [departments, setDepartments] = useState<Department[]>([])
   const [selectedDeptId, setSelectedDeptId] = useState<string | null>(null)
   const [workers, setWorkers] = useState<Worker[]>([])
+  // worker_id -> pole povolených department_id, nebo null = bez omezení (smí do všech provozů firmy)
+  const [workerDeptEligibility, setWorkerDeptEligibility] = useState<Record<string, string[] | null>>({})
   const [requirements, setRequirements] = useState<Requirement[]>([])
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [busySet, setBusySet] = useState<Set<string>>(new Set())
@@ -161,6 +163,33 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
         .filter(Boolean)
         .filter((w: any) => w.active !== false)
       setWorkers(eligibleWorkers)
+
+      // Zjistit omezení pracovníků na konkrétní provozy této firmy
+      const workerIds = eligibleWorkers.map((w: any) => w.id)
+      const companyDeptIds = (deptData ?? []).map((d: any) => d.id)
+      if (workerIds.length > 0 && companyDeptIds.length > 0) {
+        const { data: deptRestrictions } = await supabase
+          .from('shift_worker_departments')
+          .select('worker_id, department_id')
+          .in('worker_id', workerIds)
+          .in('department_id', companyDeptIds)
+
+        const restrictedWorkerIds = new Set((deptRestrictions ?? []).map((r: any) => r.worker_id))
+        const eligibilityMap: Record<string, string[] | null> = {}
+        workerIds.forEach((id: string) => {
+          if (restrictedWorkerIds.has(id)) {
+            eligibilityMap[id] = (deptRestrictions ?? [])
+              .filter((r: any) => r.worker_id === id)
+              .map((r: any) => r.department_id)
+          } else {
+            eligibilityMap[id] = null // bez omezení
+          }
+        })
+        setWorkerDeptEligibility(eligibilityMap)
+      } else {
+        setWorkerDeptEligibility({})
+      }
+
       setLoading(false)
     }
     load()
@@ -338,6 +367,9 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
     const list = workers
       .filter(w => {
         if (pickedInOtherSlots.includes(w.id)) return false
+        // Omezení na konkrétní provoz (pokud je nastaveno)
+        const allowedDepts = workerDeptEligibility[w.id]
+        if (allowedDepts !== null && allowedDepts !== undefined && selectedDeptId && !allowedDepts.includes(selectedDeptId)) return false
         if (w.id === currentSlotWorkerId) return true
         const key = `${w.id}|${date}|${shiftType}`
         return !busySet.has(key)

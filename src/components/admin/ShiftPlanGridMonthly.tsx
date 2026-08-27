@@ -84,6 +84,8 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
   const [company, setCompany] = useState<Company | null>(null)
   const [departments, setDepartments] = useState<Department[]>([])
   const [workers, setWorkers] = useState<Worker[]>([])
+  // worker_id -> pole povolených department_id, nebo null = bez omezení (smí do všech provozů firmy)
+  const [workerDeptEligibility, setWorkerDeptEligibility] = useState<Record<string, string[] | null>>({})
   const [requirements, setRequirements] = useState<Requirement[]>([])
   const [assignments, setAssignments] = useState<RawAssignment[]>([])
   const [anchorMonth, setAnchorMonth] = useState<Date>(() => {
@@ -138,6 +140,33 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
         .filter((w: any) => w.active !== false)
         .sort((a: Worker, b: Worker) => a.name.localeCompare(b.name))
       setWorkers(eligibleWorkers)
+
+      // Zjistit omezení pracovníků na konkrétní provozy této firmy
+      const workerIds = eligibleWorkers.map((w: any) => w.id)
+      const companyDeptIds = (deptData ?? []).map((d: any) => d.id)
+      if (workerIds.length > 0 && companyDeptIds.length > 0) {
+        const { data: deptRestrictions } = await supabase
+          .from('shift_worker_departments')
+          .select('worker_id, department_id')
+          .in('worker_id', workerIds)
+          .in('department_id', companyDeptIds)
+
+        const restrictedWorkerIds = new Set((deptRestrictions ?? []).map((r: any) => r.worker_id))
+        const eligibilityMap: Record<string, string[] | null> = {}
+        workerIds.forEach((id: string) => {
+          if (restrictedWorkerIds.has(id)) {
+            eligibilityMap[id] = (deptRestrictions ?? [])
+              .filter((r: any) => r.worker_id === id)
+              .map((r: any) => r.department_id)
+          } else {
+            eligibilityMap[id] = null
+          }
+        })
+        setWorkerDeptEligibility(eligibilityMap)
+      } else {
+        setWorkerDeptEligibility({})
+      }
+
       setLoading(false)
     }
     load()
@@ -408,7 +437,12 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
                     return shiftTypes.map((s, i) => {
                       const assignment = getWorkerAssignment(worker.id, date, s)
                       const isForeignCompany = assignment && assignment.company_id !== companyId
-                      const options = departments.filter(dep => effectiveShiftTypes(dep).includes(s))
+                      const allowedDepts = workerDeptEligibility[worker.id]
+                      const options = departments.filter(dep => {
+                        if (!effectiveShiftTypes(dep).includes(s)) return false
+                        if (allowedDepts !== null && allowedDepts !== undefined && !allowedDepts.includes(dep.id)) return false
+                        return true
+                      })
                       const assignedDept = assignment ? departments.find(dep => dep.id === assignment.department_id) : null
 
                       return (

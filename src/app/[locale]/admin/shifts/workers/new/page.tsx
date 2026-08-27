@@ -8,9 +8,10 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-interface Company {
+interface CompanyWithDepts {
   id: string
   name: string
+  departments: { id: string; name: string }[]
 }
 
 interface WorkerOption {
@@ -21,7 +22,7 @@ interface WorkerOption {
 export default function NewShiftWorkerPage() {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
-  const [companies, setCompanies] = useState<Company[]>([])
+  const [companies, setCompanies] = useState<CompanyWithDepts[]>([])
   const [allWorkers, setAllWorkers] = useState<WorkerOption[]>([])
   const [name, setName] = useState('')
   const [note, setNote] = useState('')
@@ -30,14 +31,21 @@ export default function NewShiftWorkerPage() {
   const [phoneCall, setPhoneCall] = useState('')
   const [phoneWhatsapp, setPhoneWhatsapp] = useState('')
   const [samePhone, setSamePhone] = useState(true)
-  const [weeklyDeclineLimit, setWeeklyDeclineLimit] = useState(999)
-  const [defaultUnavailable, setDefaultUnavailable] = useState<string[]>([])
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([])
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([])
   const [companionPriorities, setCompanionPriorities] = useState<Record<string, number>>({})
 
   useEffect(() => {
-    supabase.from('shift_companies').select('id, name').eq('active', true).order('name').then(({ data }) => {
-      setCompanies(data ?? [])
+    supabase.from('shift_companies').select('id, name, shift_departments(id, name, active)').eq('active', true).order('name').then(({ data }) => {
+      const companiesWithDepts: CompanyWithDepts[] = (data ?? []).map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        departments: (c.shift_departments ?? [])
+          .filter((d: any) => d.active !== false)
+          .sort((a: any, b: any) => a.name.localeCompare(b.name))
+          .map((d: any) => ({ id: d.id, name: d.name })),
+      }))
+      setCompanies(companiesWithDepts)
     })
     supabase.from('shift_workers').select('id, name').eq('active', true).order('name').then(({ data }) => {
       setAllWorkers(data ?? [])
@@ -45,7 +53,24 @@ export default function NewShiftWorkerPage() {
   }, [])
 
   const toggleCompany = (id: string) => {
-    setSelectedCompanies(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id])
+    const company = companies.find(c => c.id === id)
+    if (selectedCompanies.includes(id)) {
+      setSelectedCompanies(prev => prev.filter(c => c !== id))
+      if (company) {
+        const deptIds = company.departments.map(d => d.id)
+        setSelectedDepartments(prev => prev.filter(d => !deptIds.includes(d)))
+      }
+    } else {
+      setSelectedCompanies(prev => [...prev, id])
+      if (company) {
+        const deptIds = company.departments.map(d => d.id)
+        setSelectedDepartments(prev => [...prev, ...deptIds.filter(d => !prev.includes(d))])
+      }
+    }
+  }
+
+  const toggleDepartment = (deptId: string) => {
+    setSelectedDepartments(prev => prev.includes(deptId) ? prev.filter(d => d !== deptId) : [...prev, deptId])
   }
 
   const toggleCompanion = (id: string) => {
@@ -66,6 +91,19 @@ export default function NewShiftWorkerPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    for (const companyId of selectedCompanies) {
+      const company = companies.find(c => c.id === companyId)
+      if (!company) continue
+      const deptIdsForCompany = company.departments.map(d => d.id)
+      if (deptIdsForCompany.length === 0) continue
+      const selectedForCompany = selectedDepartments.filter(d => deptIdsForCompany.includes(d))
+      if (selectedForCompany.length === 0) {
+        alert(`U firmy „${company.name}" musí být zaškrtnutý alespoň jeden provoz (nebo firmu odškrtněte celou).`)
+        return
+      }
+    }
+
     setSaving(true)
 
     const { data: worker, error } = await supabase.from('shift_workers').insert({
@@ -75,8 +113,6 @@ export default function NewShiftWorkerPage() {
       has_driving_license: hasDrivingLicense,
       phone_call: phoneCall || null,
       phone_whatsapp: samePhone ? (phoneCall || null) : (phoneWhatsapp || null),
-      weekly_decline_limit: weeklyDeclineLimit,
-      default_unavailable_shift_types: defaultUnavailable,
     }).select().single()
 
     if (error || !worker) {
@@ -89,6 +125,21 @@ export default function NewShiftWorkerPage() {
       const rows = selectedCompanies.map(company_id => ({ worker_id: worker.id, company_id }))
       const { error: linkError } = await supabase.from('shift_worker_companies').insert(rows)
       if (linkError) alert('Pracovník uložen, ale nepodařilo se přiřadit firmy: ' + linkError.message)
+    }
+
+    const deptRowsToInsert: { worker_id: string; department_id: string }[] = []
+    selectedCompanies.forEach(companyId => {
+      const company = companies.find(c => c.id === companyId)
+      if (!company) return
+      const deptIdsForCompany = company.departments.map(d => d.id)
+      const selectedForCompany = selectedDepartments.filter(d => deptIdsForCompany.includes(d))
+      if (selectedForCompany.length < deptIdsForCompany.length) {
+        selectedForCompany.forEach(department_id => deptRowsToInsert.push({ worker_id: worker.id, department_id }))
+      }
+    })
+    if (deptRowsToInsert.length > 0) {
+      const { error: deptError } = await supabase.from('shift_worker_departments').insert(deptRowsToInsert)
+      if (deptError) alert('Pracovník uložen, ale nepodařilo se uložit provozy: ' + deptError.message)
     }
 
     const companionIds = Object.keys(companionPriorities)
@@ -159,38 +210,6 @@ export default function NewShiftWorkerPage() {
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <label className="form-label mb-2 block">Dostupnost směn</label>
-          <div className="mb-4">
-            <label className="form-label text-xs">Trvale nepracuje na</label>
-            <div className="flex gap-4 mt-1">
-              {[{ v: 'morning', l: 'Ranní' }, { v: 'afternoon', l: 'Odpolední' }, { v: 'night', l: 'Noční' }].map(({ v, l }) => (
-                <label key={v} className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={defaultUnavailable.includes(v)}
-                    onChange={() => setDefaultUnavailable(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v])}
-                    className="w-4 h-4 rounded"
-                    style={{ accentColor: '#2a4f2d' }}
-                  />
-                  <span className="text-sm text-gray-700">{l}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="form-label text-xs">Limit odmítnutí směn za týden (v portálu)</label>
-            <input
-              type="number"
-              min={0}
-              value={weeklyDeclineLimit}
-              onChange={(e) => setWeeklyDeclineLimit(parseInt(e.target.value) || 0)}
-              className="form-input"
-              style={{ width: '100px' }}
-            />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
           <label className="form-label mb-2 block">Sociální vazby – jezdí společně s</label>
           <p className="text-xs text-gray-400 mb-3">
             Priorita 1 = nejvyšší (nejoblíbenější řidič / nejlepší přítel), 5 = nejnižší.
@@ -232,23 +251,47 @@ export default function NewShiftWorkerPage() {
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <label className="form-label mb-2 block">Smí pracovat ve firmách</label>
+          <label className="form-label mb-2 block">Smí pracovat ve firmách a provozech</label>
+          <p className="text-xs text-gray-400 mb-3">
+            Zaškrtnutím firmy se automaticky povolí všechny její provozy. Odškrtnutím konkrétního provozu pracovníka pro něj vyloučíte.
+          </p>
           {companies.length === 0 ? (
             <p className="text-xs text-gray-400">Zatím nejsou žádné aktivní firmy. Nejdřív založte firmu v sekci Firmy.</p>
           ) : (
-            <div className="space-y-2">
-              {companies.map((c) => (
-                <label key={c.id} className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedCompanies.includes(c.id)}
-                    onChange={() => toggleCompany(c.id)}
-                    className="w-4 h-4 rounded"
-                    style={{ accentColor: '#2a4f2d' }}
-                  />
-                  <span className="text-sm text-gray-700">{c.name}</span>
-                </label>
-              ))}
+            <div className="space-y-3">
+              {companies.map((c) => {
+                const isCompanySelected = selectedCompanies.includes(c.id)
+                return (
+                  <div key={c.id}>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isCompanySelected}
+                        onChange={() => toggleCompany(c.id)}
+                        className="w-4 h-4 rounded"
+                        style={{ accentColor: '#2a4f2d' }}
+                      />
+                      <span className="text-sm font-medium text-gray-700">{c.name}</span>
+                    </label>
+                    {isCompanySelected && c.departments.length > 0 && (
+                      <div className="ml-6 mt-1.5 space-y-1">
+                        {c.departments.map((dept) => (
+                          <label key={dept.id} className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedDepartments.includes(dept.id)}
+                              onChange={() => toggleDepartment(dept.id)}
+                              className="w-3.5 h-3.5 rounded"
+                              style={{ accentColor: '#2a4f2d' }}
+                            />
+                            <span className="text-xs text-gray-600">{dept.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
