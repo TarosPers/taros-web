@@ -372,7 +372,7 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
                       <div className="flex items-center gap-1.5">
                         <span className="rounded-full flex-shrink-0" style={{ width: '8px', height: '8px', background: dept.color }} />
                         <span className="text-xs font-medium truncate" style={{ color: '#1a1a1a' }} title={dept.name}>
-                          {dept.name}
+                          {dept.name}{dept.abbreviation ? ` (${dept.abbreviation})` : ''}
                         </span>
                       </div>
                     </td>
@@ -495,13 +495,7 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
           </table>
 
           <div className="flex flex-wrap gap-3 mt-4 px-2 pb-1">
-            {departments.map((dept) => (
-              <div key={dept.id} className="flex items-center gap-1.5">
-                <span className="rounded-full" style={{ width: '8px', height: '8px', background: dept.color }} />
-                <span className="text-xs text-gray-500">{dept.abbreviation || '?'} – {dept.name}</span>
-              </div>
-            ))}
-            <div className="flex items-center gap-1.5 ml-4">
+            <div className="flex items-center gap-1.5">
               <span className="rounded" style={{ width: '10px', height: '10px', border: '1px solid #2a4f2d' }} />
               <span className="text-xs text-gray-500">= potvrzeno</span>
             </div>
