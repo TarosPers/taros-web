@@ -368,7 +368,7 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
                       <div className="flex items-center gap-1.5">
                         <span className="rounded-full flex-shrink-0" style={{ width: '8px', height: '8px', background: dept.color }} />
                         <span className="text-xs font-medium truncate" style={{ color: '#1a1a1a' }} title={dept.name}>
-                          {dept.abbreviation || dept.name}
+                          {dept.name}
                         </span>
                       </div>
                     </td>
