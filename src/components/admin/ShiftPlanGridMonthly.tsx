@@ -94,6 +94,9 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
     d.setHours(0, 0, 0, 0)
     return d
   })
+  // Zvyšuje se při každém úspěšném načtení dat - donutí needitovaná pole "Potřeba"
+  // znovu se vykreslit se správnou hodnotou, i když se data z databáze načtou později.
+  const [dataVersion, setDataVersion] = useState(0)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const [cellWidth, setCellWidth] = useState(MIN_CELL_WIDTH)
@@ -184,6 +187,7 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
     ])
 
     setRequirements(reqData ?? [])
+    setDataVersion(v => v + 1)
     setAssignments(
       (allAssignments ?? []).map((a: any) => ({
         id: a.id,
@@ -380,6 +384,7 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
                           <td key={`${date}-${s}`} className="text-center" style={{ width: cellWidth, minWidth: cellWidth, borderLeft: i === 0 ? '1px solid #e5e7eb' : undefined }}>
                             {applicable ? (
                               <input
+                                key={`${dept.id}|${date}|${s}|${dataVersion}`}
                                 type="number"
                                 min={0}
                                 defaultValue={getRequirement(dept.id, date, s)}
