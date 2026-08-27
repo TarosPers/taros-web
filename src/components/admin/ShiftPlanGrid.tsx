@@ -114,7 +114,15 @@ function computeInterval(dateStr: string, shiftType: string, times: ShiftTimes |
   return { start, end }
 }
 
-export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
+export default function ShiftPlanGrid({
+  companyId,
+  initialDate,
+  onDateChange,
+}: {
+  companyId: string
+  initialDate?: Date
+  onDateChange?: (date: Date) => void
+}) {
   const [loading, setLoading] = useState(true)
   const [company, setCompany] = useState<Company | null>(null)
   const [departments, setDepartments] = useState<Department[]>([])
@@ -128,7 +136,7 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
   const [deptTotals, setDeptTotals] = useState<Record<string, number>>({})
   const [groupRotation, setGroupRotation] = useState<GroupRotationRow[]>([])
   const [workerIntervals, setWorkerIntervals] = useState<Record<string, WorkerInterval[]>>({})
-  const [anchorMonday, setAnchorMonday] = useState<Date>(() => getMonday(new Date()))
+  const [anchorMonday, setAnchorMonday] = useState<Date>(() => getMonday(initialDate ?? new Date()))
 
   const days: Date[] = []
   const prevSunday = new Date(anchorMonday)
@@ -421,7 +429,7 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => { const d = new Date(anchorMonday); d.setDate(d.getDate() - 7); setAnchorMonday(d) }}
+            onClick={() => { const d = new Date(anchorMonday); d.setDate(d.getDate() - 7); setAnchorMonday(d); onDateChange?.(d) }}
             className="text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50"
           >
             ← Předchozí
@@ -430,7 +438,7 @@ export default function ShiftPlanGrid({ companyId }: { companyId: string }) {
             {formatDayLabel(days[0])} – {formatDayLabel(days[days.length - 1])}
           </span>
           <button
-            onClick={() => { const d = new Date(anchorMonday); d.setDate(d.getDate() + 7); setAnchorMonday(d) }}
+            onClick={() => { const d = new Date(anchorMonday); d.setDate(d.getDate() + 7); setAnchorMonday(d); onDateChange?.(d) }}
             className="text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50"
           >
             Další →

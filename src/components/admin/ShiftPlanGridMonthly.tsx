@@ -78,7 +78,15 @@ const LABEL_WIDTH = 170
 const MIN_CELL_WIDTH = 26
 const VISIBLE_DAYS = 8
 
-export default function ShiftPlanGridMonthly({ companyId }: { companyId: string }) {
+export default function ShiftPlanGridMonthly({
+  companyId,
+  initialDate,
+  onDateChange,
+}: {
+  companyId: string
+  initialDate?: Date
+  onDateChange?: (date: Date) => void
+}) {
   const [loading, setLoading] = useState(true)
   const [confirming, setConfirming] = useState(false)
   const [company, setCompany] = useState<Company | null>(null)
@@ -89,7 +97,7 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
   const [requirements, setRequirements] = useState<Requirement[]>([])
   const [assignments, setAssignments] = useState<RawAssignment[]>([])
   const [anchorMonth, setAnchorMonth] = useState<Date>(() => {
-    const d = new Date()
+    const d = initialDate ? new Date(initialDate) : new Date()
     d.setDate(1)
     d.setHours(0, 0, 0, 0)
     return d
@@ -286,8 +294,8 @@ export default function ShiftPlanGridMonthly({ companyId }: { companyId: string 
     loadRangeData()
   }
 
-  const goToPrevMonth = () => { const d = new Date(anchorMonth); d.setMonth(d.getMonth() - 1); setAnchorMonth(d) }
-  const goToNextMonth = () => { const d = new Date(anchorMonth); d.setMonth(d.getMonth() + 1); setAnchorMonth(d) }
+  const goToPrevMonth = () => { const d = new Date(anchorMonth); d.setMonth(d.getMonth() - 1); setAnchorMonth(d); onDateChange?.(d) }
+  const goToNextMonth = () => { const d = new Date(anchorMonth); d.setMonth(d.getMonth() + 1); setAnchorMonth(d); onDateChange?.(d) }
 
   if (loading) return <div className="text-sm text-gray-400">Načítám...</div>
   if (!company) return <div className="text-sm text-gray-400">Firma nenalezena</div>

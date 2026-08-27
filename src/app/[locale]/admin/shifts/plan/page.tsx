@@ -23,6 +23,8 @@ function ShiftPlanPageInner() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week')
+  // Sdílené datum mezi týdenním a měsíčním pohledem - přepnutí zobrazí stejné období
+  const [focusDate, setFocusDate] = useState<Date>(new Date())
 
   useEffect(() => {
     supabase.from('shift_companies').select('id, name').eq('active', true).order('name').then(({ data }) => {
@@ -95,8 +97,8 @@ function ShiftPlanPageInner() {
 
           {selectedCompanyId && (
             viewMode === 'week'
-              ? <ShiftPlanGrid companyId={selectedCompanyId} />
-              : <ShiftPlanGridMonthly companyId={selectedCompanyId} />
+              ? <ShiftPlanGrid companyId={selectedCompanyId} initialDate={focusDate} onDateChange={setFocusDate} />
+              : <ShiftPlanGridMonthly companyId={selectedCompanyId} initialDate={focusDate} onDateChange={setFocusDate} />
           )}
         </>
       )}
