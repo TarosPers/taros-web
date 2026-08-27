@@ -8,7 +8,7 @@ const supabase = createClient(
 )
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-const ADMIN_EMAILS = ['t.strnad@taros-personal.de', 't.wagner@taros-personal.de', 'j.simsa@taros-personal.de']
+const ADMIN_EMAILS = ['t.strnad@taros-personal.de', 'j.simsa@taros-personal.de']
 const FROM_EMAIL = 'Taros Personal <info@taros-personal.cz>'
 
 function emailLayout(content: string) {
