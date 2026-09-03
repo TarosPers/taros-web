@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages } from 'next-intl/server'
 import Footer from '@/components/ui/Footer'
+import MetaPixel from '@/components/MetaPixel'
 import '../globals.css'
 
 const inter = Inter({ subsets: ['latin', 'latin-ext'] })
@@ -28,6 +29,7 @@ export default async function LocaleLayout({
   return (
     <html lang={locale}>
       <body className={inter.className}>
+        <MetaPixel />
         <NextIntlClientProvider messages={messages}>
           {children}
           <Footer />
