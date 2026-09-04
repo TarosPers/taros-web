@@ -86,7 +86,7 @@ export default function DotaznikForm({ locale }: Props) {
       if (!res.ok) throw new Error()
       setStatus('success')
       if (typeof window !== 'undefined' && (window as any).fbq) {
-        (window as any).fbq('track', 'Lead')
+        (window as any).fbq('track', 'Lead', { content_name: 'dotaznik' })
       }
     } catch {
       setStatus('error')

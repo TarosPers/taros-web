@@ -42,12 +42,15 @@ export default function JobApplicationForm({ jobId, jobTitle, jobLocation, local
       formData.append('subject', subject)
       if (cvFile) formData.append('cv', cvFile)
       const res = await fetch('/api/apply', { method: 'POST', body: formData })
-      if (!res.ok) throw new Error()
-      setStatus('success')
-      reset()
-    } catch {
-      setStatus('error')
-    }
+if (!res.ok) throw new Error()
+setStatus('success')
+if (typeof window !== 'undefined' && (window as any).fbq) {
+  (window as any).fbq('track', 'Lead', { content_name: 'job_application' })
+}
+reset()
+} catch {
+  setStatus('error')
+}
   }
 
   if (status === 'success') {
