@@ -156,10 +156,7 @@ export default async function JobDetailPage({ params }: Props) {
                 {phoneNumber}
               </a>
 
-              <div className="px-4 py-4 rounded-xl border border-gray-100 bg-white">
-                <p className="text-xs mb-3" style={{ color: '#9ca3af' }}>
-                  {locale === 'de' ? 'Per QR-Code teilen' : 'Sdilet QR kodem'}
-                </p>
+              <div className="px-2 py-2 rounded-xl border border-gray-100 bg-white">
                 <QRCodeSection url={jobUrl} locale={locale} />
               </div>
 
