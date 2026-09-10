@@ -125,18 +125,6 @@ export default async function JobDetailPage({ params }: Props) {
                 </div>
               )}
 
-              {/* Telefon */}
-              <a
-                href={phoneHref}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-100 bg-white hover:bg-gray-50 transition-colors text-sm font-medium"
-                style={{ color: '#2a4f2d', textDecoration: 'none' }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2a4f2d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-                </svg>
-                {phoneNumber}
-              </a>
-
               {/* Motivační box - odkaz na velký dotazník */}
               <div className="px-4 py-4 rounded-xl border" style={{ background: '#f2f8f1', borderColor: '#e2ede0' }}>
                 <p className="text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#e07b0a' }}>
@@ -156,6 +144,18 @@ export default async function JobDetailPage({ params }: Props) {
                 </a>
               </div>
 
+              {/* Telefon */}
+              <a
+                href={phoneHref}
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-gray-100 bg-white hover:bg-gray-50 transition-colors text-base font-bold"
+                style={{ color: '#2a4f2d', textDecoration: 'none' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2a4f2d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                {phoneNumber}
+              </a>
+
               <div className="px-4 py-4 rounded-xl border border-gray-100 bg-white">
                 <p className="text-xs mb-3" style={{ color: '#9ca3af' }}>
                   {locale === 'de' ? 'Per QR-Code teilen' : 'Sdilet QR kodem'}
@@ -164,19 +164,30 @@ export default async function JobDetailPage({ params }: Props) {
               </div>
 
               {job.maps_url && (
-                <a
-                  href={job.maps_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-100 bg-white hover:bg-gray-50 transition-colors text-sm font-medium"
-                  style={{ color: '#2a4f2d', textDecoration: 'none' }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2a4f2d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                    <circle cx="12" cy="10" r="3"/>
-                  </svg>
-                  {locale === 'de' ? 'In Google Maps offnen' : 'Otevrit v Google Maps'}
-                </a>
+                <div className="rounded-xl border border-gray-100 bg-white overflow-hidden">
+                  <iframe
+                    src={`https://www.google.com/maps?q=${encodeURIComponent(job.location)}&output=embed`}
+                    width="100%"
+                    height="160"
+                    style={{ border: 0, display: 'block' }}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Mapa"
+                  />
+                  <a
+                    href={job.maps_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-sm font-medium"
+                    style={{ color: '#2a4f2d', textDecoration: 'none' }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2a4f2d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    {locale === 'de' ? 'In Google Maps offnen' : 'Otevrit v Google Maps'}
+                  </a>
+                </div>
               )}
             </div>
           </div>
