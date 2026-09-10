@@ -52,8 +52,12 @@ export default async function JobDetailPage({ params }: Props) {
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
   const jobUrl = `${siteUrl}${locale === 'de' ? '/de' : ''}/jobs/${slug}`
-  const fbShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(jobUrl)}`
+  const dotaznikUrl = locale === 'de' ? '/de/dotaznik' : '/dotaznik'
   const imageUrl = locale === 'de' && job.og_image_url_de ? job.og_image_url_de : job.og_image_url
+
+  // TODO: potvrdit, jaké číslo se má zobrazovat
+  const phoneNumber = '+420 601 506 010'
+  const phoneHref = `tel:${phoneNumber.replace(/\s/g, '')}`
 
   return (
     <>
@@ -121,18 +125,36 @@ export default async function JobDetailPage({ params }: Props) {
                 </div>
               )}
 
+              {/* Telefon */}
               <a
-                href={fbShareUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={phoneHref}
                 className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-100 bg-white hover:bg-gray-50 transition-colors text-sm font-medium"
-                style={{ color: '#1877F2', textDecoration: 'none' }}
+                style={{ color: '#2a4f2d', textDecoration: 'none' }}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="#1877F2">
-                  <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.791-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.267h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2a4f2d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
                 </svg>
-                {t('shareOnFacebook')}
+                {phoneNumber}
               </a>
+
+              {/* Motivační box - odkaz na velký dotazník */}
+              <div className="px-4 py-4 rounded-xl border" style={{ background: '#f2f8f1', borderColor: '#e2ede0' }}>
+                <p className="text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: '#e07b0a' }}>
+                  {locale === 'de' ? 'Nicht die richtige Stelle?' : 'Není toto místo pro vás?'}
+                </p>
+                <p className="text-sm mb-3" style={{ color: '#374151' }}>
+                  {locale === 'de'
+                    ? 'Füllen Sie den Fragebogen aus und wir finden die richtige Stelle für Sie.'
+                    : 'Vyplňte dotazník a my Vám nabídneme to pravé.'}
+                </p>
+                <a
+                  href={dotaznikUrl}
+                  className="flex items-center justify-center w-full px-4 py-2.5 rounded-lg text-sm font-medium text-white transition-colors"
+                  style={{ background: '#e07b0a', textDecoration: 'none' }}
+                >
+                  {locale === 'de' ? 'Fragebogen ausfüllen' : 'Vyplnit dotazník'}
+                </a>
+              </div>
 
               <div className="px-4 py-4 rounded-xl border border-gray-100 bg-white">
                 <p className="text-xs mb-3" style={{ color: '#9ca3af' }}>
