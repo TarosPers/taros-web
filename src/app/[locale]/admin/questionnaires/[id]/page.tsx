@@ -102,10 +102,12 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
   }, [params.id])
 
   const handleSave = async () => {
-    setSaving(true)
-    await supabase.from('questionnaires').update({ status, notes }).eq('id', params.id)
-    setSaving(false)
-  }
+  setSaving(true)
+  const { error } = await supabase.from('questionnaires').update({ status, notes }).eq('id', params.id)
+  if (error) alert('Chyba: ' + error.message)
+  else alert('OK: ' + status)
+  setSaving(false)
+}
 
   const handleDelete = async () => {
     if (!confirm(tr.confirmDelete)) return
