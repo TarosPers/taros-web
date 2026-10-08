@@ -102,12 +102,10 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
   }, [params.id])
 
   const handleSave = async () => {
-  setSaving(true)
-  const { error } = await supabase.from('questionnaires').update({ status, notes }).eq('id', params.id)
-  if (error) alert('Chyba: ' + error.message)
-  else alert('OK: ' + status)
-  setSaving(false)
-}
+    setSaving(true)
+    await supabase.from('questionnaires').update({ status, notes }).eq('id', params.id)
+    setSaving(false)
+  }
 
   const handleDelete = async () => {
     if (!confirm(tr.confirmDelete)) return
@@ -166,7 +164,6 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
         </div>
       </div>
 
-      {/* Foto */}
       {data.foto_url && (
         <div className="mb-4">
           <img src={data.foto_url} alt="Foto" className="w-24 h-24 rounded-xl object-cover border border-gray-100" />
@@ -174,8 +171,6 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
       )}
 
       <div className="space-y-4">
-
-        {/* Stav + poznámky */}
         <div className="bg-white rounded-xl border border-gray-100 p-6">
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
@@ -201,7 +196,6 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
           </button>
         </div>
 
-        {/* Osobní */}
         <div className="bg-white rounded-xl border border-gray-100 p-6">
           <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>{tr.personal}</h2>
           <div className="grid grid-cols-2 gap-x-6">
@@ -213,7 +207,6 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
           </div>
         </div>
 
-        {/* Kontakt */}
         <div className="bg-white rounded-xl border border-gray-100 p-6">
           <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>{tr.contact}</h2>
           <div className="grid grid-cols-2 gap-x-6">
@@ -224,7 +217,6 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
           </div>
         </div>
 
-        {/* Pracovní preference */}
         <div className="bg-white rounded-xl border border-gray-100 p-6">
           <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>{tr.work}</h2>
           <div className="grid grid-cols-2 gap-x-6">
@@ -238,7 +230,6 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
           </div>
         </div>
 
-        {/* Vzdělání */}
         <div className="bg-white rounded-xl border border-gray-100 p-6">
           <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>{tr.education}</h2>
           <div className="grid grid-cols-2 gap-x-6">
@@ -248,7 +239,6 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
           </div>
         </div>
 
-        {/* Zkušenosti */}
         <div className="bg-white rounded-xl border border-gray-100 p-6">
           <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>{tr.experience}</h2>
           {field(tr.fields.job1, data.job1)}
@@ -256,7 +246,6 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
           {field(tr.fields.job3, data.job3)}
         </div>
 
-        {/* Zpráva */}
         {data.message && (
           <div className="bg-white rounded-xl border border-gray-100 p-6">
             <h2 className="text-sm font-medium mb-3" style={{ color: '#1a1a1a' }}>{tr.message}</h2>
