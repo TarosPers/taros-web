@@ -1,6 +1,4 @@
 import { createClient } from '@supabase/supabase-js'
-import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
 import Link from 'next/link'
 
 const supabase = createClient(
@@ -9,24 +7,6 @@ const supabase = createClient(
 )
 
 export default async function AdminDashboard() {
-  // Superadmin check
-  const cookieStore = await cookies()
-  const supabaseAuth = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      global: {
-        headers: {
-          cookie: cookieStore.toString(),
-        },
-      },
-    }
-  )
-  const { data: { session } } = await supabaseAuth.auth.getSession()
-  if (!session || session.user.user_metadata?.role !== 'superadmin') {
-    redirect('/admin/jobs')
-  }
-
   const { data: newQuestionnaires } = await supabase
     .from('questionnaires')
     .select('id, first_name, last_name, profese, created_at')
@@ -62,7 +42,6 @@ export default async function AdminDashboard() {
       <h1 className="text-2xl font-bold mb-2" style={{ color: '#1a1a1a' }}>Nástěnka</h1>
       <p className="text-sm text-gray-400 mb-8">Přehled nových položek k vyřízení</p>
 
-      {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-10">
         <div className="rounded-xl border border-gray-100 bg-white px-5 py-4">
           <div className="text-xs text-gray-400 mb-1">Aktivní pozice</div>
@@ -84,10 +63,7 @@ export default async function AdminDashboard() {
         </div>
       </div>
 
-      {/* Two columns */}
       <div className="grid grid-cols-2 gap-6">
-
-        {/* Dotazníky */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold" style={{ color: '#1a1a1a' }}>Dotazníky k vyřízení</h2>
@@ -121,7 +97,6 @@ export default async function AdminDashboard() {
           )}
         </div>
 
-        {/* Přihlášky */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold" style={{ color: '#1a1a1a' }}>Přihlášky k vyřízení</h2>
@@ -154,10 +129,8 @@ export default async function AdminDashboard() {
             </div>
           )}
         </div>
-
       </div>
 
-      {/* Quick actions */}
       <div className="mt-10 pt-8 border-t border-gray-100">
         <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Rychlé akce</h2>
         <div className="flex flex-wrap gap-3">
