@@ -7,17 +7,31 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+const statusBadge = (status: string) => {
+  const map: Record<string, { bg: string; color: string; label: string }> = {
+    new:       { bg: '#eff6ff', color: '#3b82f6', label: 'nový' },
+    reviewing: { bg: '#fef3e6', color: '#e07b0a', label: 'probíhá' },
+    invited:   { bg: '#eaf3e8', color: '#2a4f2d', label: 'pozván' },
+  }
+  const s = map[status] ?? map.new
+  return (
+    <div className="inline-block text-xs px-2 py-0.5 rounded-full mt-1" style={{ background: s.bg, color: s.color }}>
+      {s.label}
+    </div>
+  )
+}
+
 export default async function AdminDashboard() {
   const { data: newQuestionnaires } = await supabase
     .from('questionnaires')
-    .select('id, first_name, last_name, profese, created_at')
-    .eq('status', 'new')
+    .select('id, first_name, last_name, profese, created_at, status')
+    .in('status', ['new', 'reviewing', 'invited'])
     .order('created_at', { ascending: false })
 
   const { data: newApplicants } = await supabase
     .from('applicants')
-    .select('id, first_name, last_name, created_at, job_id')
-    .eq('status', 'new')
+    .select('id, first_name, last_name, created_at, job_id, status')
+    .in('status', ['new', 'reviewing', 'invited'])
     .order('created_at', { ascending: false })
 
   const { data: activeJobs } = await supabase
@@ -41,7 +55,7 @@ export default async function AdminDashboard() {
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
       <h1 className="text-2xl font-bold mb-2" style={{ color: '#1a1a1a' }}>Nástěnka</h1>
-      <p className="text-sm text-gray-400 mb-8">Přehled nových položek k vyřízení</p>
+      <p className="text-sm text-gray-400 mb-8">Přehled položek k vyřízení</p>
 
       <div className="grid grid-cols-3 gap-4 mb-10">
         <div className="rounded-xl border border-gray-100 bg-white px-5 py-4">
@@ -49,14 +63,14 @@ export default async function AdminDashboard() {
           <div className="text-3xl font-bold" style={{ color: '#2a4f2d' }}>{activeJobs?.length ?? 0}</div>
         </div>
         <div className="rounded-xl border border-gray-100 bg-white px-5 py-4">
-          <div className="text-xs text-gray-400 mb-1">Nové dotazníky</div>
+          <div className="text-xs text-gray-400 mb-1">Dotazníky k vyřízení</div>
           <div className="text-3xl font-bold" style={{ color: newQuestionnaires?.length ? '#e07b0a' : '#9ca3af' }}>
             {newQuestionnaires?.length ?? 0}
           </div>
           <div className="text-xs text-gray-300 mt-1">celkem {totalQuestionnaires ?? 0}</div>
         </div>
         <div className="rounded-xl border border-gray-100 bg-white px-5 py-4">
-          <div className="text-xs text-gray-400 mb-1">Nové přihlášky</div>
+          <div className="text-xs text-gray-400 mb-1">Přihlášky k vyřízení</div>
           <div className="text-3xl font-bold" style={{ color: newApplicants?.length ? '#e07b0a' : '#9ca3af' }}>
             {newApplicants?.length ?? 0}
           </div>
@@ -73,7 +87,7 @@ export default async function AdminDashboard() {
           {!newQuestionnaires?.length ? (
             <div className="rounded-xl border border-gray-100 bg-white px-5 py-8 text-center">
               <div className="text-2xl mb-2">✅</div>
-              <p className="text-sm text-gray-400">Žádné nové dotazníky</p>
+              <p className="text-sm text-gray-400">Žádné dotazníky k vyřízení</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -90,7 +104,7 @@ export default async function AdminDashboard() {
                   </div>
                   <div className="text-right">
                     <div className="text-xs text-gray-300">{formatDate(q.created_at)}</div>
-                    <div className="inline-block text-xs px-2 py-0.5 rounded-full mt-1" style={{ background: '#fff3e0', color: '#e07b0a' }}>nový</div>
+                    {statusBadge(q.status)}
                   </div>
                 </Link>
               ))}
@@ -106,7 +120,7 @@ export default async function AdminDashboard() {
           {!newApplicants?.length ? (
             <div className="rounded-xl border border-gray-100 bg-white px-5 py-8 text-center">
               <div className="text-2xl mb-2">✅</div>
-              <p className="text-sm text-gray-400">Žádné nové přihlášky</p>
+              <p className="text-sm text-gray-400">Žádné přihlášky k vyřízení</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -123,7 +137,7 @@ export default async function AdminDashboard() {
                   </div>
                   <div className="text-right">
                     <div className="text-xs text-gray-300">{formatDate(a.created_at)}</div>
-                    <div className="inline-block text-xs px-2 py-0.5 rounded-full mt-1" style={{ background: '#fff3e0', color: '#e07b0a' }}>nová</div>
+                    {statusBadge(a.status)}
                   </div>
                 </Link>
               ))}
