@@ -11,6 +11,7 @@ const supabase = createClient(
 
 const t = {
   cs: {
+    dashboard: 'Nástěnka',
     jobs: 'Inzeráty',
     applicants: 'Žadatelé',
     pages: 'Stránky',
@@ -27,6 +28,7 @@ const t = {
     loading: 'Načítám...',
   },
   de: {
+    dashboard: 'Übersicht',
     jobs: 'Stellenangebote',
     applicants: 'Bewerber',
     pages: 'Seiten',
@@ -118,7 +120,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true)
   const [isSuperadmin, setIsSuperadmin] = useState(false)
   const [lang, setLang] = useState<'cs' | 'de'>('cs')
-  // null = bez omezení (vidí vše, jako doteď); pole = jen vyjmenované sekce
   const [permissions, setPermissions] = useState<string[] | null>(null)
   const router = useRouter()
   const pathname = usePathname()
@@ -127,9 +128,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session && !pathname.includes('/login')) {
         router.push('/admin/login')
+        return
       }
       if (session?.user?.user_metadata?.role === 'superadmin') {
         setIsSuperadmin(true)
+        // Po přihlášení přesměrovat na nástěnku
+        if (pathname.endsWith('/admin/login')) {
+          router.push('/admin')
+        }
       }
       const userLang = session?.user?.user_metadata?.lang ?? 'cs'
       setLang(userLang as 'cs' | 'de')
@@ -158,7 +164,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return <>{children}</>
   }
 
-  // Superadmin vidí vždy vše, bez ohledu na permissions. Jinak: null = bez omezení, jinak filtrujeme podle klíče.
   const canSee = (key: string) => isSuperadmin || permissions === null || permissions.includes(key)
 
   const navItems = [
@@ -182,6 +187,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isSystemActive = pathname.includes('/admin/pages') || pathname.includes('/admin/users')
 
   const isPlanPage = pathname.includes('/admin/shifts/plan')
+  const isDashboard = pathname === '/admin' || pathname === '/cs/admin' || pathname === '/de/admin'
 
   return (
     <div className="min-h-screen" style={{ background: '#f5f5f5' }}>
@@ -193,6 +199,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               {isSuperadmin ? 'Superadmin' : 'Admin'}
             </span>
             <div className="flex items-center gap-6">
+              {isSuperadmin && (
+                <Link
+                  href="/admin"
+                  className="text-sm transition-colors"
+                  style={{
+                    color: isDashboard ? '#2a4f2d' : '#6b7280',
+                    fontWeight: isDashboard ? 500 : 400,
+                  }}
+                >
+                  {tr.dashboard}
+                </Link>
+              )}
               {navItems.map(({ href, label }) => (
                 <Link
                   key={href}
