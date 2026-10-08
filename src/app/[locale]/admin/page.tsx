@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
+import { AutoRefresh } from './auto-refresh'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -163,7 +164,7 @@ export default async function AdminDashboard() {
             Všechny přihlášky
           </Link>
         </div>
-      </div>
+      <AutoRefresh /></div>
     </div>
   )
 }
