@@ -3,6 +3,7 @@ export const revalidate = 0
 import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import { AutoRefresh } from './auto-refresh'
+import { CollapsibleSection } from './collapsible-section'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,14 +24,32 @@ const statusBadge = (status: string) => {
   )
 }
 
+const itemCard = (href: string, title: string, subtitle: string | null, date: string, status: string) => (
+  <Link
+    key={href}
+    href={href}
+    className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-4 py-3 hover:border-orange-200 transition-colors"
+    style={{ textDecoration: 'none' }}
+  >
+    <div>
+      <div className="text-sm font-medium" style={{ color: '#1a1a1a' }}>{title}</div>
+      {subtitle && <div className="text-xs text-gray-400 mt-0.5">{subtitle}</div>}
+    </div>
+    <div className="text-right">
+      <div className="text-xs text-gray-300">{date}</div>
+      {statusBadge(status)}
+    </div>
+  </Link>
+)
+
 export default async function AdminDashboard() {
-  const { data: newQuestionnaires } = await supabase
+  const { data: questionnaires } = await supabase
     .from('questionnaires')
     .select('id, first_name, last_name, profese, created_at, status')
     .in('status', ['new', 'reviewing', 'invited'])
     .order('created_at', { ascending: false })
 
-  const { data: newApplicants } = await supabase
+  const { data: applicants } = await supabase
     .from('applicants')
     .select('id, first_name, last_name, created_at, job_id, status')
     .in('status', ['new', 'reviewing', 'invited'])
@@ -54,6 +73,11 @@ export default async function AdminDashboard() {
     return d.toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' })
   }
 
+  const newQ = questionnaires?.filter(q => q.status === 'new') ?? []
+  const inProgressQ = questionnaires?.filter(q => q.status !== 'new') ?? []
+  const newA = applicants?.filter(a => a.status === 'new') ?? []
+  const inProgressA = applicants?.filter(a => a.status !== 'new') ?? []
+
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
       <h1 className="text-2xl font-bold mb-2" style={{ color: '#1a1a1a' }}>Nástěnka</h1>
@@ -66,83 +90,87 @@ export default async function AdminDashboard() {
         </div>
         <div className="rounded-xl border border-gray-100 bg-white px-5 py-4">
           <div className="text-xs text-gray-400 mb-1">Dotazníky k vyřízení</div>
-          <div className="text-3xl font-bold" style={{ color: newQuestionnaires?.length ? '#e07b0a' : '#9ca3af' }}>
-            {newQuestionnaires?.length ?? 0}
+          <div className="text-3xl font-bold" style={{ color: (questionnaires?.length ?? 0) > 0 ? '#e07b0a' : '#9ca3af' }}>
+            {questionnaires?.length ?? 0}
           </div>
           <div className="text-xs text-gray-300 mt-1">celkem {totalQuestionnaires ?? 0}</div>
         </div>
         <div className="rounded-xl border border-gray-100 bg-white px-5 py-4">
           <div className="text-xs text-gray-400 mb-1">Přihlášky k vyřízení</div>
-          <div className="text-3xl font-bold" style={{ color: newApplicants?.length ? '#e07b0a' : '#9ca3af' }}>
-            {newApplicants?.length ?? 0}
+          <div className="text-3xl font-bold" style={{ color: (applicants?.length ?? 0) > 0 ? '#e07b0a' : '#9ca3af' }}>
+            {applicants?.length ?? 0}
           </div>
           <div className="text-xs text-gray-300 mt-1">celkem {totalApplicants ?? 0}</div>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-6">
+        {/* Dotazníky */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold" style={{ color: '#1a1a1a' }}>Dotazníky k vyřízení</h2>
             <Link href="/admin/questionnaires" className="text-xs" style={{ color: '#2a4f2d' }}>Zobrazit vše →</Link>
           </div>
-          {!newQuestionnaires?.length ? (
+          {!questionnaires?.length ? (
             <div className="rounded-xl border border-gray-100 bg-white px-5 py-8 text-center">
               <div className="text-2xl mb-2">✅</div>
               <p className="text-sm text-gray-400">Žádné dotazníky k vyřízení</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {newQuestionnaires.map((q) => (
-                <Link
-                  key={q.id}
-                  href={`/admin/questionnaires/${q.id}`}
-                  className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-4 py-3 hover:border-orange-200 transition-colors"
-                  style={{ textDecoration: 'none' }}
-                >
-                  <div>
-                    <div className="text-sm font-medium" style={{ color: '#1a1a1a' }}>{q.first_name} {q.last_name}</div>
-                    {q.profese && <div className="text-xs text-gray-400 mt-0.5">{q.profese}</div>}
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs text-gray-300">{formatDate(q.created_at)}</div>
-                    {statusBadge(q.status)}
-                  </div>
-                </Link>
+              {newQ.map((q) => itemCard(
+                `/admin/questionnaires/${q.id}`,
+                `${q.first_name} ${q.last_name}`,
+                q.profese ?? null,
+                formatDate(q.created_at),
+                q.status
               ))}
+              {inProgressQ.length > 0 && (
+                <CollapsibleSection label={`Probíhající (${inProgressQ.length})`}>
+                  {inProgressQ.map((q) => itemCard(
+                    `/admin/questionnaires/${q.id}`,
+                    `${q.first_name} ${q.last_name}`,
+                    q.profese ?? null,
+                    formatDate(q.created_at),
+                    q.status
+                  ))}
+                </CollapsibleSection>
+              )}
             </div>
           )}
         </div>
 
+        {/* Přihlášky */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold" style={{ color: '#1a1a1a' }}>Přihlášky k vyřízení</h2>
             <Link href="/admin/applicants" className="text-xs" style={{ color: '#2a4f2d' }}>Zobrazit vše →</Link>
           </div>
-          {!newApplicants?.length ? (
+          {!applicants?.length ? (
             <div className="rounded-xl border border-gray-100 bg-white px-5 py-8 text-center">
               <div className="text-2xl mb-2">✅</div>
               <p className="text-sm text-gray-400">Žádné přihlášky k vyřízení</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {newApplicants.map((a) => (
-                <Link
-                  key={a.id}
-                  href={`/admin/applicants/${a.id}`}
-                  className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-4 py-3 hover:border-orange-200 transition-colors"
-                  style={{ textDecoration: 'none' }}
-                >
-                  <div>
-                    <div className="text-sm font-medium" style={{ color: '#1a1a1a' }}>{a.first_name} {a.last_name}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">přihláška #{String(a.id).slice(0, 6)}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs text-gray-300">{formatDate(a.created_at)}</div>
-                    {statusBadge(a.status)}
-                  </div>
-                </Link>
+              {newA.map((a) => itemCard(
+                `/admin/applicants/${a.id}`,
+                `${a.first_name} ${a.last_name}`,
+                `přihláška #${String(a.id).slice(0, 6)}`,
+                formatDate(a.created_at),
+                a.status
               ))}
+              {inProgressA.length > 0 && (
+                <CollapsibleSection label={`Probíhající (${inProgressA.length})`}>
+                  {inProgressA.map((a) => itemCard(
+                    `/admin/applicants/${a.id}`,
+                    `${a.first_name} ${a.last_name}`,
+                    `přihláška #${String(a.id).slice(0, 6)}`,
+                    formatDate(a.created_at),
+                    a.status
+                  ))}
+                </CollapsibleSection>
+              )}
             </div>
           )}
         </div>
@@ -164,7 +192,8 @@ export default async function AdminDashboard() {
             Všechny přihlášky
           </Link>
         </div>
-      <AutoRefresh /></div>
+      </div>
+      <AutoRefresh />
     </div>
   )
 }
