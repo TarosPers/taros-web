@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
+import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import Link from 'next/link'
 
 const supabase = createClient(
@@ -7,6 +9,24 @@ const supabase = createClient(
 )
 
 export default async function AdminDashboard() {
+  // Superadmin check
+  const cookieStore = await cookies()
+  const supabaseAuth = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      global: {
+        headers: {
+          cookie: cookieStore.toString(),
+        },
+      },
+    }
+  )
+  const { data: { session } } = await supabaseAuth.auth.getSession()
+  if (!session || session.user.user_metadata?.role !== 'superadmin') {
+    redirect('/admin/jobs')
+  }
+
   const { data: newQuestionnaires } = await supabase
     .from('questionnaires')
     .select('id, first_name, last_name, profese, created_at')
@@ -70,18 +90,9 @@ export default async function AdminDashboard() {
         {/* Dotazníky */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold" style={{ color: '#1a1a1a' }}>
-              Dotazníky k vyřízení
-            </h2>
-            <Link
-              href="/admin/questionnaires"
-              className="text-xs"
-              style={{ color: '#2a4f2d' }}
-            >
-              Zobrazit vše →
-            </Link>
+            <h2 className="text-sm font-semibold" style={{ color: '#1a1a1a' }}>Dotazníky k vyřízení</h2>
+            <Link href="/admin/questionnaires" className="text-xs" style={{ color: '#2a4f2d' }}>Zobrazit vše →</Link>
           </div>
-
           {!newQuestionnaires?.length ? (
             <div className="rounded-xl border border-gray-100 bg-white px-5 py-8 text-center">
               <div className="text-2xl mb-2">✅</div>
@@ -97,21 +108,12 @@ export default async function AdminDashboard() {
                   style={{ textDecoration: 'none' }}
                 >
                   <div>
-                    <div className="text-sm font-medium" style={{ color: '#1a1a1a' }}>
-                      {q.first_name} {q.last_name}
-                    </div>
-                    {q.profese && (
-                      <div className="text-xs text-gray-400 mt-0.5">{q.profese}</div>
-                    )}
+                    <div className="text-sm font-medium" style={{ color: '#1a1a1a' }}>{q.first_name} {q.last_name}</div>
+                    {q.profese && <div className="text-xs text-gray-400 mt-0.5">{q.profese}</div>}
                   </div>
                   <div className="text-right">
                     <div className="text-xs text-gray-300">{formatDate(q.created_at)}</div>
-                    <div
-                      className="inline-block text-xs px-2 py-0.5 rounded-full mt-1"
-                      style={{ background: '#fff3e0', color: '#e07b0a' }}
-                    >
-                      nový
-                    </div>
+                    <div className="inline-block text-xs px-2 py-0.5 rounded-full mt-1" style={{ background: '#fff3e0', color: '#e07b0a' }}>nový</div>
                   </div>
                 </Link>
               ))}
@@ -122,18 +124,9 @@ export default async function AdminDashboard() {
         {/* Přihlášky */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold" style={{ color: '#1a1a1a' }}>
-              Přihlášky k vyřízení
-            </h2>
-            <Link
-              href="/admin/applicants"
-              className="text-xs"
-              style={{ color: '#2a4f2d' }}
-            >
-              Zobrazit vše →
-            </Link>
+            <h2 className="text-sm font-semibold" style={{ color: '#1a1a1a' }}>Přihlášky k vyřízení</h2>
+            <Link href="/admin/applicants" className="text-xs" style={{ color: '#2a4f2d' }}>Zobrazit vše →</Link>
           </div>
-
           {!newApplicants?.length ? (
             <div className="rounded-xl border border-gray-100 bg-white px-5 py-8 text-center">
               <div className="text-2xl mb-2">✅</div>
@@ -149,19 +142,12 @@ export default async function AdminDashboard() {
                   style={{ textDecoration: 'none' }}
                 >
                   <div>
-                    <div className="text-sm font-medium" style={{ color: '#1a1a1a' }}>
-                      {a.first_name} {a.last_name}
-                    </div>
+                    <div className="text-sm font-medium" style={{ color: '#1a1a1a' }}>{a.first_name} {a.last_name}</div>
                     <div className="text-xs text-gray-400 mt-0.5">přihláška #{String(a.id).slice(0, 6)}</div>
                   </div>
                   <div className="text-right">
                     <div className="text-xs text-gray-300">{formatDate(a.created_at)}</div>
-                    <div
-                      className="inline-block text-xs px-2 py-0.5 rounded-full mt-1"
-                      style={{ background: '#fff3e0', color: '#e07b0a' }}
-                    >
-                      nová
-                    </div>
+                    <div className="inline-block text-xs px-2 py-0.5 rounded-full mt-1" style={{ background: '#fff3e0', color: '#e07b0a' }}>nová</div>
                   </div>
                 </Link>
               ))}
@@ -175,32 +161,16 @@ export default async function AdminDashboard() {
       <div className="mt-10 pt-8 border-t border-gray-100">
         <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Rychlé akce</h2>
         <div className="flex flex-wrap gap-3">
-          <Link
-            href="/admin/jobs/new"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
-            style={{ background: '#2a4f2d', color: '#fff', textDecoration: 'none' }}
-          >
+          <Link href="/admin/jobs/new" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium" style={{ background: '#2a4f2d', color: '#fff', textDecoration: 'none' }}>
             + Přidat pozici
           </Link>
-          <Link
-            href="/admin/jobs"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 bg-white"
-            style={{ color: '#374151', textDecoration: 'none' }}
-          >
+          <Link href="/admin/jobs" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 bg-white" style={{ color: '#374151', textDecoration: 'none' }}>
             Správa pozic
           </Link>
-          <Link
-            href="/admin/questionnaires"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 bg-white"
-            style={{ color: '#374151', textDecoration: 'none' }}
-          >
+          <Link href="/admin/questionnaires" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 bg-white" style={{ color: '#374151', textDecoration: 'none' }}>
             Všechny dotazníky
           </Link>
-          <Link
-            href="/admin/applicants"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 bg-white"
-            style={{ color: '#374151', textDecoration: 'none' }}
-          >
+          <Link href="/admin/applicants" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 bg-white" style={{ color: '#374151', textDecoration: 'none' }}>
             Všechny přihlášky
           </Link>
         </div>
