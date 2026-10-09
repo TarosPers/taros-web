@@ -20,6 +20,7 @@ const t = {
     deleting: 'Mažu...',
     confirmDelete: 'Opravdu smazat tento dotazník? Tuto akci nelze vrátit zpět.',
     generateProfile: 'Vygenerovat profil',
+    candidateProfile: 'Profil kandidáta',
     status: 'Stav',
     notes: 'Interní poznámky',
     notesPlaceholder: 'Poznámky viditelné pouze v administraci...',
@@ -52,6 +53,7 @@ const t = {
     deleting: 'Lösche...',
     confirmDelete: 'Diesen Fragebogen wirklich löschen? Dies kann nicht rückgängig gemacht werden.',
     generateProfile: 'Profil generieren',
+    candidateProfile: 'Kandidatenprofil',
     status: 'Status',
     notes: 'Interne Notizen',
     notesPlaceholder: 'Notizen nur in der Verwaltung sichtbar...',
@@ -147,6 +149,15 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
           </span>
         </div>
         <div className="flex items-center gap-3">
+          {data.email && (
+            <Link
+              href={`/admin/candidates/${encodeURIComponent(data.email)}`}
+              className="text-xs px-3 py-1.5 rounded-lg border font-medium"
+              style={{ borderColor: '#6366f1', color: '#6366f1' }}
+            >
+              👤 {tr.candidateProfile}
+            </Link>
+          )}
           <Link
             href={`/admin/questionnaires/${params.id}/profile`}
             className="text-xs px-3 py-1.5 rounded-lg border font-medium"
