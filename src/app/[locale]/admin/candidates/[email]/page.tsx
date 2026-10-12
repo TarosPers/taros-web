@@ -15,6 +15,7 @@ const statusColors: Record<string, { bg: string; color: string; label: string }>
   invited:   { bg: '#eaf3e8', color: '#2a4f2d', label: 'Pozván' },
   rejected:  { bg: '#fef2f2', color: '#ef4444', label: 'Zamítnut' },
   hired:     { bg: '#2a4f2d', color: '#fff',    label: 'Přijat' },
+  withdrew:  { bg: '#f3f4f6', color: '#6b7280', label: 'Odstoupil' },
 }
 
 const Badge = ({ status }: { status: string }) => {
@@ -34,8 +35,9 @@ const Field = ({ label, value }: { label: string; value?: string | null }) =>
     </div>
   ) : null
 
-export default async function CandidateProfilePage({ params }: { params: { email: string } }) {
-  const email = decodeURIComponent(params.email)
+export default async function CandidateProfilePage({ params }: { params: { locale: string; email: string } }) {
+  const { locale, email: emailParam } = params
+  const email = decodeURIComponent(emailParam)
 
   const [{ data: questionnaires }, { data: applicants }] = await Promise.all([
     supabase.from('questionnaires').select('*').ilike('email', email).order('created_at', { ascending: false }),
@@ -67,7 +69,7 @@ export default async function CandidateProfilePage({ params }: { params: { email
             {phone && <div className="text-sm text-gray-400">{phone}</div>}
           </div>
         </div>
-        <Link href="/admin" className="text-sm text-gray-400 hover:text-gray-600">← Zpět</Link>
+        <Link href={`/${locale}/admin`} className="text-sm text-gray-400 hover:text-gray-600">← Zpět</Link>
       </div>
 
       <div className="space-y-4">
@@ -77,7 +79,7 @@ export default async function CandidateProfilePage({ params }: { params: { email
               <h2 className="text-sm font-semibold" style={{ color: '#1a1a1a' }}>Dotazník</h2>
               <div className="flex items-center gap-3">
                 <Badge status={q.status} />
-                <Link href={`/admin/questionnaires/${q.id}`} className="text-xs" style={{ color: '#2a4f2d' }}>Otevřít →</Link>
+                <Link href={`/${locale}/admin/questionnaires/${q.id}`} className="text-xs" style={{ color: '#2a4f2d' }}>Otevřít →</Link>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-x-6">
@@ -125,7 +127,7 @@ export default async function CandidateProfilePage({ params }: { params: { email
                     <div className="text-xs text-gray-300 mb-1">{formatDate(app.created_at)}</div>
                     <Badge status={app.status} />
                     <div className="mt-1">
-                      <Link href={`/admin/applicants/${app.id}`} className="text-xs" style={{ color: '#2a4f2d' }}>Detail →</Link>
+                      <Link href={`/${locale}/admin/applicants/${app.id}`} className="text-xs" style={{ color: '#2a4f2d' }}>Detail →</Link>
                     </div>
                   </div>
                 </div>
