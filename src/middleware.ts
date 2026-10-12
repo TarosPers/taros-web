@@ -20,7 +20,6 @@ async function findRedirect(pathname: string): Promise<string | null> {
           apikey: anonKey,
           Authorization: `Bearer ${anonKey}`,
         },
-        // Přesměrování se nemění často, cache na krátkou dobu ať to zbytečně nezatěžuje DB
         next: { revalidate: 60 },
       }
     )
@@ -41,8 +40,6 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL(target, req.url), 301)
   }
 
-  // Subdoména app.taros-personal.cz - portál pro pracovníky, vždy interně /cs/portal/...
-  // (chytře nepřidává "/portal" podruhé, pokud ho návštěvník už zadal ručně)
   if (hostname.startsWith('app.')) {
     const url = req.nextUrl.clone()
     const alreadyHasPortalPrefix = pathname === '/portal' || pathname.startsWith('/portal/')
@@ -53,17 +50,12 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.rewrite(url)
   }
 
-  // Admin sekce: jazyk textů řídí přihlášený uživatel (user_metadata.lang),
-  // ne URL prefix. Bez tohoto obejití next-intl podle jazyka prohlížeče
-  // omylem přesměruje /admin/... na /de/admin/..., což v adminu nemá
-  // žádný efekt a jen matoucím způsobem mění adresu.
   if (pathname === '/admin' || pathname.startsWith('/admin/')) {
     const url = req.nextUrl.clone()
     url.pathname = `/cs${pathname}`
-    return NextResponse.rewrite(url)
+    return NextResponse.redirect(url)
   }
 
-  // Portál pro pracovníky (i na hlavní doméně, pro testování): stejné obejití jako u adminu
   if (pathname === '/portal' || pathname.startsWith('/portal/')) {
     const url = req.nextUrl.clone()
     url.pathname = `/cs${pathname}`
