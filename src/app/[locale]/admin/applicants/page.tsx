@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -56,6 +57,8 @@ const t = {
 }
 
 export default function AdminApplicantsPage() {
+  const pathname = usePathname()
+  const locale = pathname.split('/')[1] ?? 'cs'
   const [applicants, setApplicants] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
@@ -152,7 +155,7 @@ export default function AdminApplicantsPage() {
                       </span>
                     </td>
                     <td className="px-5 py-3.5 flex items-center gap-3">
-                      <Link href={`/admin/applicants/${a.id}`} className="text-xs" style={{ color: '#2a4f2d' }}>
+                      <Link href={`/${locale}/admin/applicants/${a.id}`} className="text-xs" style={{ color: '#2a4f2d' }}>
                         {tr.detail}
                       </Link>
                       {isSuperadmin && (
