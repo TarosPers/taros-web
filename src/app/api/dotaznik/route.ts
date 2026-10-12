@@ -191,7 +191,8 @@ export async function POST(req: NextRequest) {
 
     const profese = Array.isArray(data.profese) ? data.profese.join(', ') : (data.profese ?? '')
 
-    await supabase.from('questionnaires').insert({
+    // 1. Uložit do Supabase — kritické, musí projít
+    const { error: dbError } = await supabase.from('questionnaires').insert({
       first_name: data.firstName,
       last_name: data.lastName,
       phone: data.phone,
@@ -220,65 +221,71 @@ export async function POST(req: NextRequest) {
       status: 'new',
     })
 
+    if (dbError) {
+      console.error('Supabase insert error:', dbError)
+      return NextResponse.json({ error: 'Database error' }, { status: 500 })
+    }
+
+    // 2. Google Sheets — nekritické, chyby se logují ale neblokují
     await appendToSheet(data, profese)
 
-// Popisky u admin e-mailu jsou dvojjazyčné (CS / DE) – příjemci jsou i němečtí kolegové
-const YES_NO: Record<string, string> = {
-  ano: 'ano / ja',
-  ne: 'ne / nein',
-}
+    // Popisky u admin e-mailu jsou dvojjazyčné (CS / DE) – příjemci jsou i němečtí kolegové
+    const YES_NO: Record<string, string> = {
+      ano: 'ano / ja',
+      ne: 'ne / nein',
+    }
 
-const GERMAN_LEVELS: Record<string, string> = {
-  zadna: 'žádná / keine',
-  zakladni: 'základní / Grundkenntnisse',
-  pokrocila: 'pokročilá / fortgeschritten',
-  plynula: 'plynulá / fließend',
-}
+    const GERMAN_LEVELS: Record<string, string> = {
+      zadna: 'žádná / keine',
+      zakladni: 'základní / Grundkenntnisse',
+      pokrocila: 'pokročilá / fortgeschritten',
+      plynula: 'plynulá / fließend',
+    }
 
-const MARITAL_STATUS: Record<string, string> = {
-  svobodny: 'svobodný/á / ledig',
-  zenaty: 'ženatý/vdaná / verheiratet',
-  rozvedeny: 'rozvedený/á / geschieden',
-}
+    const MARITAL_STATUS: Record<string, string> = {
+      svobodny: 'svobodný/á / ledig',
+      zenaty: 'ženatý/vdaná / verheiratet',
+      rozvedeny: 'rozvedený/á / geschieden',
+    }
 
-const EDUCATION_LABELS: Record<string, string> = {
-  zakladni: 'Základní / Grundschule',
-  vyceni: 'Vyučení v oboru / Berufsausbildung',
-  stredni: 'Střední škola / Gymnasium/Fachoberschule',
-  vos: 'Vyšší odborná škola / Fachschule',
-  vs: 'Vysoká škola / Hochschule/Universität',
-}
+    const EDUCATION_LABELS: Record<string, string> = {
+      zakladni: 'Základní / Grundschule',
+      vyceni: 'Vyučení v oboru / Berufsausbildung',
+      stredni: 'Střední škola / Gymnasium/Fachoberschule',
+      vos: 'Vyšší odborná škola / Fachschule',
+      vs: 'Vysoká škola / Hochschule/Universität',
+    }
 
-const PROFESE_MAP: Record<string, string> = {
-  'Automechanik': 'Kfz-Mechaniker',
-  'CNC obsluha': 'CNC-Bediener',
-  'Lakýrník': 'Lackierer',
-  'Strojník (bagr)': 'Baggerführer',
-  'Svářeč CO2, MIG, MAG (135)': 'Schweißer CO2, MIG, MAG (135)',
-  'Řidič vysokozdvižného vozíku': 'Staplerfahrer',
-  'Výrobní linka': 'Produktionslinie',
-  'Zdravotní sestra': 'Krankenpfleger/in',
-  'Brusič': 'Schleifer',
-  'Elektrikář': 'Elektriker',
-  'Skladník': 'Lagerarbeiter',
-  'Svářeč TIG, WIG (141)': 'Schweißer TIG, WIG (141)',
-  'Řidič LKW': 'LKW-Fahrer',
-  'Truhlář': 'Tischler',
-  'Zámečník': 'Schlosser',
-  'nic z výše uvedeného': 'keines der oben genannten',
-}
+    const PROFESE_MAP: Record<string, string> = {
+      'Automechanik': 'Kfz-Mechaniker',
+      'CNC obsluha': 'CNC-Bediener',
+      'Lakýrník': 'Lackierer',
+      'Strojník (bagr)': 'Baggerführer',
+      'Svářeč CO2, MIG, MAG (135)': 'Schweißer CO2, MIG, MAG (135)',
+      'Řidič vysokozdvižného vozíku': 'Staplerfahrer',
+      'Výrobní linka': 'Produktionslinie',
+      'Zdravotní sestra': 'Krankenpfleger/in',
+      'Brusič': 'Schleifer',
+      'Elektrikář': 'Elektriker',
+      'Skladník': 'Lagerarbeiter',
+      'Svářeč TIG, WIG (141)': 'Schweißer TIG, WIG (141)',
+      'Řidič LKW': 'LKW-Fahrer',
+      'Truhlář': 'Tischler',
+      'Zámečník': 'Schlosser',
+      'nic z výše uvedeného': 'keines der oben genannten',
+    }
 
-function translateProfese(profeseCsv: string) {
-  return profeseCsv
-    .split(',')
-    .map(p => p.trim())
-    .filter(Boolean)
-    .map(p => {
-      const de = PROFESE_MAP[p]
-      return de ? `${p} / ${de}` : p
-    })
-    .join(', ')
-}
+    function translateProfese(profeseCsv: string) {
+      return profeseCsv
+        .split(',')
+        .map(p => p.trim())
+        .filter(Boolean)
+        .map(p => {
+          const de = PROFESE_MAP[p]
+          return de ? `${p} / ${de}` : p
+        })
+        .join(', ')
+    }
 
     const workTypeLabel = data.workType === 'pendler'
       ? 'Pendler (denní dojíždění) / Pendler (tägliches Pendeln)'
@@ -319,48 +326,58 @@ function translateProfese(profeseCsv: string) {
       ${attachments.length > 0 ? `<p style="color:#999;font-size:11px;margin-top:12px;">📎 Přílohy / Anhänge: ${attachments.map(a => a.filename).join(', ')}</p>` : ''}
     `)
 
-    // Email na adminy + Make hook
-    await resend.emails.send({
-      from: FROM_EMAIL,
-      to: [...ADMIN_EMAILS, MAKE_EMAIL],
-      subject: `Nový dotazník: ${data.firstName} ${data.lastName}`,
-      attachments: attachments.length > 0 ? attachments : undefined,
-      html: adminHtml,
-    })
+    // 3. Email na adminy + Make hook — nekritické, ale logujeme
+    try {
+      await resend.emails.send({
+        from: FROM_EMAIL,
+        to: [...ADMIN_EMAILS, MAKE_EMAIL],
+        subject: `Nový dotazník: ${data.firstName} ${data.lastName}`,
+        attachments: attachments.length > 0 ? attachments : undefined,
+        html: adminHtml,
+      })
+    } catch (emailErr) {
+      console.error('Admin email error:', emailErr)
+      // Neblokujeme — data jsou v DB, admin může vidět v dashboardu
+    }
 
-    // Potvrzovací email uchazeči (beze změny, jen česky)
-    await resend.emails.send({
-      from: FROM_EMAIL,
-      to: data.email,
-      subject: 'Potvrzení přijetí dotazníku – Taros Personalservice',
-      html: emailLayoutSimple(`
-        <h2 style="margin:0 0 16px;color:#1a1a1a;font-size:22px;">Dobrý den, ${data.firstName}!</h2>
-        <p style="color:#374151;font-size:14px;line-height:1.6;margin:0 0 16px;">
-          Váš dotazník byl úspěšně přijat. Děkujeme za zájem o práci v Německu prostřednictvím agentury Taros Personalservice.
-        </p>
-        <p style="color:#374151;font-size:14px;line-height:1.6;margin:0 0 24px;">
-          Náš tým Vaše údaje zpracuje a ozveme se Vám <strong>do 48 hodin</strong>.
-        </p>
-        <div style="background:#f2f8f1;border-left:3px solid #2a4f2d;padding:16px;margin:0 0 24px;border-radius:0 8px 8px 0;">
-          <p style="margin:0 0 8px;color:#2a4f2d;font-size:13px;font-weight:bold;">Co nás čeká:</p>
-          <p style="margin:0;color:#374151;font-size:13px;line-height:1.8;">
-            ✓ Prostudujeme Vaše zkušenosti a preference<br/>
-            ✓ Vyhledáme vhodné pracovní pozice<br/>
-            ✓ Kontaktujeme Vás s konkrétní nabídkou
+    // 4. Potvrzovací email uchazeči — nekritické, neblokuje submit
+    try {
+      await resend.emails.send({
+        from: FROM_EMAIL,
+        to: data.email,
+        subject: 'Potvrzení přijetí dotazníku – Taros Personalservice',
+        html: emailLayoutSimple(`
+          <h2 style="margin:0 0 16px;color:#1a1a1a;font-size:22px;">Dobrý den, ${data.firstName}!</h2>
+          <p style="color:#374151;font-size:14px;line-height:1.6;margin:0 0 16px;">
+            Váš dotazník byl úspěšně přijat. Děkujeme za zájem o práci v Německu prostřednictvím agentury Taros Personalservice.
           </p>
-        </div>
-        <p style="color:#374151;font-size:14px;line-height:1.6;">
-          Komunikujeme česky i německy – bez jazykové bariéry.<br/>
-          V případě dotazů nás kontaktujte na <a href="mailto:info@taros-personal.de" style="color:#2a4f2d;">info@taros-personal.de</a>
-          nebo telefonicky na <strong>09922 / 869 1234</strong>.
-        </p>
-        <p style="color:#374151;font-size:14px;margin-top:24px;">S pozdravem,<br/><strong>Tým Taros Personalservice</strong></p>
-      `),
-    })
+          <p style="color:#374151;font-size:14px;line-height:1.6;margin:0 0 24px;">
+            Náš tým Vaše údaje zpracuje a ozveme se Vám <strong>do 48 hodin</strong>.
+          </p>
+          <div style="background:#f2f8f1;border-left:3px solid #2a4f2d;padding:16px;margin:0 0 24px;border-radius:0 8px 8px 0;">
+            <p style="margin:0 0 8px;color:#2a4f2d;font-size:13px;font-weight:bold;">Co nás čeká:</p>
+            <p style="margin:0;color:#374151;font-size:13px;line-height:1.8;">
+              ✓ Prostudujeme Vaše zkušenosti a preference<br/>
+              ✓ Vyhledáme vhodné pracovní pozice<br/>
+              ✓ Kontaktujeme Vás s konkrétní nabídkou
+            </p>
+          </div>
+          <p style="color:#374151;font-size:14px;line-height:1.6;">
+            Komunikujeme česky i německy – bez jazykové bariéry.<br/>
+            V případě dotazů nás kontaktujte na <a href="mailto:info@taros-personal.de" style="color:#2a4f2d;">info@taros-personal.de</a>
+            nebo telefonicky na <strong>09922 / 869 1234</strong>.
+          </p>
+          <p style="color:#374151;font-size:14px;margin-top:24px;">S pozdravem,<br/><strong>Tým Taros Personalservice</strong></p>
+        `),
+      })
+    } catch (confirmErr) {
+      console.error('Confirmation email error:', confirmErr)
+      // Neblokujeme — data jsou v DB
+    }
 
     return NextResponse.json({ ok: true })
   } catch (err) {
-    console.error(err)
+    console.error('Dotaznik API error:', err)
     return NextResponse.json({ error: 'Failed' }, { status: 500 })
   }
 }
