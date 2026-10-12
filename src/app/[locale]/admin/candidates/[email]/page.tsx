@@ -2,7 +2,6 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -44,7 +43,14 @@ export default async function CandidateProfilePage({ params }: { params: { local
     supabase.from('applicants').select('*, jobs(title)').ilike('email', email).order('created_at', { ascending: false }),
   ])
 
-  if (!questionnaires?.length && !applicants?.length) notFound()
+  if (!questionnaires?.length && !applicants?.length) {
+    return (
+      <div className="max-w-3xl">
+        <div className="text-sm text-gray-400">Uchazeč nenalezen.</div>
+        <Link href={`/${locale}/admin`} className="text-sm text-gray-400 hover:text-gray-600 mt-2 inline-block">← Zpět</Link>
+      </div>
+    )
+  }
 
   const q = questionnaires?.[0]
   const a = applicants?.[0]
