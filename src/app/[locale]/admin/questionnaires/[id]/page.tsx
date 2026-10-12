@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 
 const supabase = createClient(
@@ -80,6 +80,8 @@ const t = {
 
 export default function QuestionnaireDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const pathname = usePathname()
+  const locale = pathname.split('/')[1] ?? 'cs'
   const [data, setData] = useState<any>(null)
   const [status, setStatus] = useState('new')
   const [notes, setNotes] = useState('')
@@ -113,7 +115,7 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
     if (!confirm(tr.confirmDelete)) return
     setDeleting(true)
     await supabase.from('questionnaires').delete().eq('id', params.id)
-    router.push('/admin/questionnaires')
+    router.push(`/${locale}/admin/questionnaires`)
   }
 
   const tr = t[lang]
@@ -151,7 +153,7 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
         <div className="flex items-center gap-3">
           {data.email && (
             <Link
-              href={`/admin/candidates/${encodeURIComponent(data.email)}`}
+              href={`/${locale}/admin/candidates/${encodeURIComponent(data.email)}`}
               className="text-xs px-3 py-1.5 rounded-lg border font-medium"
               style={{ borderColor: '#6366f1', color: '#6366f1' }}
             >
@@ -159,7 +161,7 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
             </Link>
           )}
           <Link
-            href={`/admin/questionnaires/${params.id}/profile`}
+            href={`/${locale}/admin/questionnaires/${params.id}/profile`}
             className="text-xs px-3 py-1.5 rounded-lg border font-medium"
             style={{ borderColor: '#2a4f2d', color: '#2a4f2d' }}
           >

@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -27,6 +27,7 @@ const t = {
     cv: 'Životopis',
     download: 'Stáhnout',
     message: 'Zpráva uchazeče',
+    candidateProfile: 'Profil kandidáta',
     statuses: {
       new: 'Nový',
       reviewing: 'Probíhá',
@@ -53,6 +54,7 @@ const t = {
     cv: 'Lebenslauf',
     download: 'Herunterladen',
     message: 'Nachricht des Bewerbers',
+    candidateProfile: 'Kandidatenprofil',
     statuses: {
       new: 'Neu',
       reviewing: 'In Bearbeitung',
@@ -65,6 +67,8 @@ const t = {
 
 export default function ApplicantDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const pathname = usePathname()
+  const locale = pathname.split('/')[1] ?? 'cs'
   const [applicant, setApplicant] = useState<any>(null)
   const [job, setJob] = useState<any>(null)
   const [status, setStatus] = useState('new')
@@ -122,11 +126,22 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
 
   return (
     <div className="max-w-3xl">
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => router.back()} className="text-sm text-gray-400 hover:text-gray-600">{tr.back}</button>
-        <h1 className="text-xl font-medium" style={{ color: '#1a1a1a' }}>
-          {applicant.first_name} {applicant.last_name}
-        </h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <button onClick={() => router.back()} className="text-sm text-gray-400 hover:text-gray-600">{tr.back}</button>
+          <h1 className="text-xl font-medium" style={{ color: '#1a1a1a' }}>
+            {applicant.first_name} {applicant.last_name}
+          </h1>
+        </div>
+        {applicant.email && (
+          <a
+            href={`/${locale}/admin/candidates/${encodeURIComponent(applicant.email)}`}
+            className="text-xs px-3 py-1.5 rounded-lg border font-medium"
+            style={{ borderColor: '#6366f1', color: '#6366f1', textDecoration: 'none' }}
+          >
+            👤 {tr.candidateProfile}
+          </a>
+        )}
       </div>
 
       <div className="space-y-4">
