@@ -31,7 +31,7 @@ const t = {
     experience: 'Pracovní zkušenosti',
     message: 'Zpráva',
     statuses: {
-      new: 'Nový', reviewing: 'Probíhá', invited: 'Pozván', rejected: 'Zamítnut', hired: 'Přijat',
+      new: 'Nový', reviewing: 'Probíhá', invited: 'Pozván', rejected: 'Zamítnut', hired: 'Přijat', withdrew: 'Odstoupil',
     },
     fields: {
       firstName: 'Jméno', lastName: 'Příjmení', phone: 'Telefon', email: 'E-mail',
@@ -64,7 +64,7 @@ const t = {
     experience: 'Berufserfahrung',
     message: 'Nachricht',
     statuses: {
-      new: 'Neu', reviewing: 'In Bearbeitung', invited: 'Eingeladen', rejected: 'Abgelehnt', hired: 'Eingestellt',
+      new: 'Neu', reviewing: 'In Bearbeitung', invited: 'Eingeladen', rejected: 'Abgelehnt', hired: 'Eingestellt', withdrew: 'Zurückgezogen',
     },
     fields: {
       firstName: 'Vorname', lastName: 'Nachname', phone: 'Telefon', email: 'E-Mail',
@@ -129,6 +129,7 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
     invited:   { bg: '#eaf3e8', color: '#2a4f2d' },
     rejected:  { bg: '#fef2f2', color: '#ef4444' },
     hired:     { bg: '#2a4f2d', color: '#fff' },
+    withdrew:  { bg: '#f3f4f6', color: '#6b7280' },
   }
 
   const field = (label: string, value: string | null | undefined) => value ? (

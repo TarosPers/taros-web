@@ -25,11 +25,12 @@ const t = {
     delete: 'Smazat',
     confirmDelete: 'Opravdu smazat žadatele',
     statuses: {
-      new: { label: 'Nový', bg: '#eff6ff', color: '#3b82f6' },
-      reviewing: { label: 'Probíhá', bg: '#fef3e6', color: '#e07b0a' },
-      invited: { label: 'Pozván', bg: '#eaf3e8', color: '#2a4f2d' },
-      rejected: { label: 'Zamítnut', bg: '#fef2f2', color: '#ef4444' },
-      hired: { label: 'Přijat', bg: '#2a4f2d', color: '#fff' },
+      new:       { label: 'Nový',      bg: '#eff6ff', color: '#3b82f6' },
+      reviewing: { label: 'Probíhá',   bg: '#fef3e6', color: '#e07b0a' },
+      invited:   { label: 'Pozván',    bg: '#eaf3e8', color: '#2a4f2d' },
+      rejected:  { label: 'Zamítnut',  bg: '#fef2f2', color: '#ef4444' },
+      hired:     { label: 'Přijat',    bg: '#2a4f2d', color: '#fff' },
+      withdrew:  { label: 'Odstoupil', bg: '#f3f4f6', color: '#6b7280' },
     },
   },
   de: {
@@ -47,11 +48,12 @@ const t = {
     delete: 'Löschen',
     confirmDelete: 'Bewerber wirklich löschen',
     statuses: {
-      new: { label: 'Neu', bg: '#eff6ff', color: '#3b82f6' },
+      new:       { label: 'Neu',            bg: '#eff6ff', color: '#3b82f6' },
       reviewing: { label: 'In Bearbeitung', bg: '#fef3e6', color: '#e07b0a' },
-      invited: { label: 'Eingeladen', bg: '#eaf3e8', color: '#2a4f2d' },
-      rejected: { label: 'Abgelehnt', bg: '#fef2f2', color: '#ef4444' },
-      hired: { label: 'Eingestellt', bg: '#2a4f2d', color: '#fff' },
+      invited:   { label: 'Eingeladen',     bg: '#eaf3e8', color: '#2a4f2d' },
+      rejected:  { label: 'Abgelehnt',      bg: '#fef2f2', color: '#ef4444' },
+      hired:     { label: 'Eingestellt',    bg: '#2a4f2d', color: '#fff' },
+      withdrew:  { label: 'Zurückgezogen',  bg: '#f3f4f6', color: '#6b7280' },
     },
   },
 }
@@ -77,7 +79,7 @@ export default function AdminApplicantsPage() {
   const loadApplicants = async () => {
     const { data } = await supabase
       .from('applicants')
-      .select('*, job:jobs(title_cs, location)')
+      .select('*, job:jobs(title_cs, title_de, location)')
       .order('created_at', { ascending: false })
     setApplicants(data ?? [])
     setLoading(false)
@@ -100,7 +102,7 @@ export default function AdminApplicantsPage() {
           <p className="text-sm text-gray-400 mt-0.5">{applicants.length} {tr.total}</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {(['all', 'new', 'reviewing', 'invited', 'hired', 'rejected'] as const).map((s) => (
+          {(['all', 'new', 'reviewing', 'invited', 'hired', 'rejected', 'withdrew'] as const).map((s) => (
             <button
               key={s}
               onClick={() => setFilter(s)}

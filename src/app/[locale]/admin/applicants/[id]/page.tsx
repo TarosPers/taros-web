@@ -16,6 +16,7 @@ const t = {
     saving: 'Ukládám...',
     loading: 'Načítám...',
     notFound: 'Žadatel nenalezen',
+    candidateProfile: 'Profil kandidáta',
     status: 'Stav',
     notes: 'Interní poznámky',
     notesPlaceholder: 'Poznámky viditelné pouze v administraci...',
@@ -27,13 +28,8 @@ const t = {
     cv: 'Životopis',
     download: 'Stáhnout',
     message: 'Zpráva uchazeče',
-    candidateProfile: 'Profil kandidáta',
     statuses: {
-      new: 'Nový',
-      reviewing: 'Probíhá',
-      invited: 'Pozván',
-      rejected: 'Zamítnut',
-      hired: 'Přijat',
+      new: 'Nový', reviewing: 'Probíhá', invited: 'Pozván', rejected: 'Zamítnut', hired: 'Přijat', withdrew: 'Odstoupil',
     },
   },
   de: {
@@ -43,6 +39,7 @@ const t = {
     saving: 'Speichere...',
     loading: 'Laden...',
     notFound: 'Bewerber nicht gefunden',
+    candidateProfile: 'Kandidatenprofil',
     status: 'Status',
     notes: 'Interne Notizen',
     notesPlaceholder: 'Notizen nur in der Verwaltung sichtbar...',
@@ -54,13 +51,8 @@ const t = {
     cv: 'Lebenslauf',
     download: 'Herunterladen',
     message: 'Nachricht des Bewerbers',
-    candidateProfile: 'Kandidatenprofil',
     statuses: {
-      new: 'Neu',
-      reviewing: 'In Bearbeitung',
-      invited: 'Eingeladen',
-      rejected: 'Abgelehnt',
-      hired: 'Eingestellt',
+      new: 'Neu', reviewing: 'In Bearbeitung', invited: 'Eingeladen', rejected: 'Abgelehnt', hired: 'Eingestellt', withdrew: 'Zurückgezogen',
     },
   },
 }
@@ -115,6 +107,7 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
     invited:   { bg: '#eaf3e8', color: '#2a4f2d' },
     rejected:  { bg: '#fef2f2', color: '#ef4444' },
     hired:     { bg: '#2a4f2d', color: '#fff' },
+    withdrew:  { bg: '#f3f4f6', color: '#6b7280' },
   }
 
   const field = (label: string, value: string | null | undefined) => value ? (
@@ -145,8 +138,6 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
       </div>
 
       <div className="space-y-4">
-
-        {/* Stav + poznámky */}
         <div className="bg-white rounded-xl border border-gray-100 p-6">
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
@@ -182,7 +173,6 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
           </button>
         </div>
 
-        {/* Osobní údaje */}
         <div className="bg-white rounded-xl border border-gray-100 p-6">
           <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>{tr.personalInfo}</h2>
           <div className="grid grid-cols-2 gap-x-6">
@@ -194,7 +184,6 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
           </div>
         </div>
 
-        {/* Kontakt */}
         <div className="bg-white rounded-xl border border-gray-100 p-6">
           <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>{tr.contact}</h2>
           <div className="grid grid-cols-2 gap-x-6">
@@ -205,7 +194,6 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
           </div>
         </div>
 
-        {/* Pracovní info */}
         <div className="bg-white rounded-xl border border-gray-100 p-6">
           <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>{tr.jobInfo}</h2>
           <div className="grid grid-cols-2 gap-x-6">
@@ -223,7 +211,6 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
           )}
         </div>
 
-        {/* CV */}
         {applicant.cv_url && (
           <div className="bg-white rounded-xl border border-gray-100 p-6">
             <h2 className="text-sm font-medium mb-3" style={{ color: '#1a1a1a' }}>{tr.cv}</h2>
