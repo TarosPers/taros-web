@@ -50,6 +50,12 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.rewrite(url)
   }
 
+  // /cs/admin a /de/admin — přeskočit intl middleware aby nedošlo k redirect loop
+  if (pathname.startsWith('/cs/admin') || pathname.startsWith('/de/admin')) {
+    return NextResponse.next()
+  }
+
+  // /admin bez locale — redirect na /cs/admin
   if (pathname === '/admin' || pathname.startsWith('/admin/')) {
     const url = req.nextUrl.clone()
     url.pathname = `/cs${pathname}`
