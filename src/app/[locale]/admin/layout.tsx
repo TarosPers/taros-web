@@ -124,17 +124,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter()
   const pathname = usePathname()
 
+  // Extrahovat locale z pathname, fallback na 'cs'
+  const locale = (() => {
+    const seg = pathname.split('/')[1]
+    return seg === 'cs' || seg === 'de' ? seg : lang
+  })()
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session && !pathname.includes('/login')) {
-        router.push('/admin/login')
+        router.push(`/${lang}/admin/login`)
         return
       }
       if (session?.user?.user_metadata?.role === 'superadmin') {
         setIsSuperadmin(true)
-        // Po přihlášení přesměrovat na nástěnku
         if (pathname.endsWith('/admin/login')) {
-          router.push('/admin')
+          router.push(`/${lang}/admin`)
         }
       }
       const userLang = session?.user?.user_metadata?.lang ?? 'cs'
@@ -147,7 +152,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    router.push('/admin/login')
+    router.push(`/${locale}/admin/login`)
   }
 
   const tr = t[lang]
@@ -167,22 +172,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const canSee = (key: string) => isSuperadmin || permissions === null || permissions.includes(key)
 
   const navItems = [
-    { href: '/admin/jobs',            label: tr.jobs,           key: 'jobs' },
-    { href: '/admin/applicants',      label: tr.applicants,     key: 'applicants' },
-    { href: '/admin/questionnaires',  label: tr.questionnaires, key: 'questionnaires' },
-    { href: '/admin/redirects',       label: tr.redirects,      key: 'redirects' },
+    { href: `/${locale}/admin/jobs`,            label: tr.jobs,           key: 'jobs' },
+    { href: `/${locale}/admin/applicants`,      label: tr.applicants,     key: 'applicants' },
+    { href: `/${locale}/admin/questionnaires`,  label: tr.questionnaires, key: 'questionnaires' },
+    { href: `/${locale}/admin/redirects`,       label: tr.redirects,      key: 'redirects' },
   ].filter(item => canSee(item.key))
 
   const planningItems = [
-    { href: '/admin/shifts/plan',      label: tr.planningPlan },
-    { href: '/admin/shifts/companies', label: tr.planningCompanies },
-    { href: '/admin/shifts/workers',   label: tr.planningWorkers },
+    { href: `/${locale}/admin/shifts/plan`,      label: tr.planningPlan },
+    { href: `/${locale}/admin/shifts/companies`, label: tr.planningCompanies },
+    { href: `/${locale}/admin/shifts/workers`,   label: tr.planningWorkers },
   ]
   const isPlanningActive = pathname.includes('/admin/shifts')
 
   const systemItems = [
-    ...(canSee('pages') ? [{ href: '/admin/pages', label: tr.pages }] : []),
-    ...(isSuperadmin ? [{ href: '/admin/users', label: tr.users }] : []),
+    ...(canSee('pages') ? [{ href: `/${locale}/admin/pages`, label: tr.pages }] : []),
+    ...(isSuperadmin ? [{ href: `/${locale}/admin/users`, label: tr.users }] : []),
   ]
   const isSystemActive = pathname.includes('/admin/pages') || pathname.includes('/admin/users')
 
@@ -201,7 +206,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="flex items-center gap-6">
               {isSuperadmin && (
                 <Link
-                  href="/admin"
+                  href={`/${locale}/admin`}
                   className="text-sm transition-colors"
                   style={{
                     color: isDashboard ? '#2a4f2d' : '#6b7280',
