@@ -9,8 +9,8 @@ const supabase = createClient(
 )
 const resend = new Resend(process.env.RESEND_API_KEY)
 const ADMIN_EMAILS = ['t.strnad@taros-personal.de', 'j.simsa@taros-personal.de']
-const MAKE_EMAIL = '97dv7wspqu6l9wifj83imrk5ldfbls7l@hook.eu2.make.com'
 const FROM_EMAIL = 'Taros Personal <info@taros-personal.cz>'
+const MAKE_WEBHOOK_URL = 'https://hook.eu2.make.com/5klx17dwbnrtt89lc2p7dpzwh285fpkh'
 
 async function appendToSheet(data: Record<string, any>, profese: string) {
   try {
@@ -73,6 +73,44 @@ async function appendToSheet(data: Record<string, any>, profese: string) {
     })
   } catch (err) {
     console.error('Google Sheets error:', err)
+  }
+}
+
+async function sendToMakeWebhook(data: Record<string, any>, profese: string) {
+  try {
+    await fetch(MAKE_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+        email: data.email,
+        street: data.street,
+        zip: data.zip,
+        city: data.city,
+        birthDate: data.birthDate,
+        nationality: data.nationality,
+        maritalStatus: data.maritalStatus,
+        profese,
+        profeseJina: data.profeseJina,
+        startDate: data.startDate,
+        german: data.german,
+        workType: data.workType,
+        drivingLicense: data.drivingLicense,
+        vzvLicense: data.vzvLicense,
+        hasCar: data.hasCar,
+        primarySchool: data.primarySchool,
+        education: data.education,
+        educationDetail: data.educationDetail,
+        job1: data.job1,
+        job2: data.job2,
+        job3: data.job3,
+        message: data.message,
+      }),
+    })
+  } catch (err) {
+    console.error('Make webhook error:', err)
   }
 }
 
@@ -226,10 +264,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Database error' }, { status: 500 })
     }
 
-    // 2. Google Sheets — nekritické, chyby se logují ale neblokují
+    // 2. Google Sheets — nekritické
     await appendToSheet(data, profese)
 
-    // Popisky u admin e-mailu jsou dvojjazyčné (CS / DE) – příjemci jsou i němečtí kolegové
+    // 3. Make webhook (Excel) — nekritické
+    await sendToMakeWebhook(data, profese)
+
     const YES_NO: Record<string, string> = {
       ano: 'ano / ja',
       ne: 'ne / nein',
@@ -326,21 +366,20 @@ export async function POST(req: NextRequest) {
       ${attachments.length > 0 ? `<p style="color:#999;font-size:11px;margin-top:12px;">📎 Přílohy / Anhänge: ${attachments.map(a => a.filename).join(', ')}</p>` : ''}
     `)
 
-    // 3. Email na adminy + Make hook — nekritické, ale logujeme
+    // 4. Email na adminy — nekritické
     try {
       await resend.emails.send({
         from: FROM_EMAIL,
-        to: [...ADMIN_EMAILS, MAKE_EMAIL],
+        to: ADMIN_EMAILS,
         subject: `Nový dotazník: ${data.firstName} ${data.lastName}`,
         attachments: attachments.length > 0 ? attachments : undefined,
         html: adminHtml,
       })
     } catch (emailErr) {
       console.error('Admin email error:', emailErr)
-      // Neblokujeme — data jsou v DB, admin může vidět v dashboardu
     }
 
-    // 4. Potvrzovací email uchazeči — nekritické, neblokuje submit
+    // 5. Potvrzovací email uchazeči — nekritické
     try {
       await resend.emails.send({
         from: FROM_EMAIL,
@@ -372,7 +411,6 @@ export async function POST(req: NextRequest) {
       })
     } catch (confirmErr) {
       console.error('Confirmation email error:', confirmErr)
-      // Neblokujeme — data jsou v DB
     }
 
     return NextResponse.json({ ok: true })
