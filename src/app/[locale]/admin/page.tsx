@@ -24,34 +24,37 @@ const statusBadge = (status: string) => {
   )
 }
 
-const itemCard = (href: string, title: string, subtitle: string | null, date: string, status: string) => (
-  <Link
+const itemCard = (href: string, title: string, subtitle: string | null, date: string, status: string, email?: string) => (
+  <div
     key={href}
-    href={href}
     className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-4 py-3 hover:border-orange-200 transition-colors"
-    style={{ textDecoration: 'none' }}
   >
     <div>
-      <div className="text-sm font-medium" style={{ color: '#1a1a1a' }}>{title}</div>
+      <Link href={href} className="text-sm font-medium hover:underline" style={{ color: '#1a1a1a', textDecoration: 'none' }}>{title}</Link>
       {subtitle && <div className="text-xs text-gray-400 mt-0.5">{subtitle}</div>}
+      {email && (
+        <Link href={`/admin/candidates/${encodeURIComponent(email)}`} className="text-xs mt-1 inline-block" style={{ color: '#2a4f2d' }}>
+          👤 Profil
+        </Link>
+      )}
     </div>
     <div className="text-right">
       <div className="text-xs text-gray-300">{date}</div>
       {statusBadge(status)}
     </div>
-  </Link>
+  </div>
 )
 
 export default async function AdminDashboard() {
   const { data: questionnaires } = await supabase
     .from('questionnaires')
-    .select('id, first_name, last_name, profese, created_at, status')
+    .select('id, first_name, last_name, email, profese, created_at, status')
     .in('status', ['new', 'reviewing', 'invited'])
     .order('created_at', { ascending: false })
 
   const { data: applicants } = await supabase
     .from('applicants')
-    .select('id, first_name, last_name, created_at, job_id, status')
+    .select('id, first_name, last_name, email, created_at, job_id, status')
     .in('status', ['new', 'reviewing', 'invited'])
     .order('created_at', { ascending: false })
 
@@ -123,7 +126,8 @@ export default async function AdminDashboard() {
                 `${q.first_name} ${q.last_name}`,
                 q.profese ?? null,
                 formatDate(q.created_at),
-                q.status
+                q.status,
+                q.email
               ))}
               {inProgressQ.length > 0 && (
                 <CollapsibleSection label={`Probíhající (${inProgressQ.length})`}>
@@ -132,7 +136,8 @@ export default async function AdminDashboard() {
                     `${q.first_name} ${q.last_name}`,
                     q.profese ?? null,
                     formatDate(q.created_at),
-                    q.status
+                    q.status,
+                    q.email
                   ))}
                 </CollapsibleSection>
               )}
@@ -158,7 +163,8 @@ export default async function AdminDashboard() {
                 `${a.first_name} ${a.last_name}`,
                 `přihláška #${String(a.id).slice(0, 6)}`,
                 formatDate(a.created_at),
-                a.status
+                a.status,
+                a.email
               ))}
               {inProgressA.length > 0 && (
                 <CollapsibleSection label={`Probíhající (${inProgressA.length})`}>
@@ -167,7 +173,8 @@ export default async function AdminDashboard() {
                     `${a.first_name} ${a.last_name}`,
                     `přihláška #${String(a.id).slice(0, 6)}`,
                     formatDate(a.created_at),
-                    a.status
+                    a.status,
+                    a.email
                   ))}
                 </CollapsibleSection>
               )}
