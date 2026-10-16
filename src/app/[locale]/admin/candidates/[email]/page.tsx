@@ -41,6 +41,7 @@ export default async function CandidateProfilePage({
   params: { locale: string; email: string }
 }) {
   const email = decodeURIComponent(params.email)
+  const locale = params.locale
 
   const [{ data: questionnaires }, { data: applications }] = await Promise.all([
     supabase
@@ -60,7 +61,7 @@ export default async function CandidateProfilePage({
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="text-gray-400 text-lg mb-2">Kandidát nenalezen</div>
-          <Link href="/admin" className="text-sm text-orange-500 hover:underline">← Zpět na přehled</Link>
+          <Link href={`/${locale}/admin`} className="text-sm text-orange-500 hover:underline">← Zpět na přehled</Link>
         </div>
       </div>
     )
@@ -83,7 +84,7 @@ export default async function CandidateProfilePage({
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <div>
-            <Link href="/admin" className="text-xs text-gray-400 hover:text-gray-600 mb-1 inline-block">
+            <Link href={`/${locale}/admin`} className="text-xs text-gray-400 hover:text-gray-600 mb-1 inline-block">
               ← Zpět na přehled
             </Link>
             <h1 className="text-2xl font-bold text-gray-900">{fullName}</h1>
@@ -92,7 +93,7 @@ export default async function CandidateProfilePage({
           {questionnaires?.[0] && (
             <div className="mt-4">
               <Link
-                href={`/admin/dotaznik/${questionnaires[0].id}`}
+                href={`/${locale}/admin/dotaznik/${questionnaires[0].id}`}
                 className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-600"
               >
                 Otevřít dotazník
@@ -113,7 +114,7 @@ export default async function CandidateProfilePage({
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-gray-300">{formatDate(q.created_at)}</span>
-                <Link href={`/admin/dotaznik/${q.id}`} className="text-xs text-orange-500 hover:underline">
+                <Link href={`/${locale}/admin/dotaznik/${q.id}`} className="text-xs text-orange-500 hover:underline">
                   Detail →
                 </Link>
               </div>
@@ -203,7 +204,7 @@ export default async function CandidateProfilePage({
                   </div>
                   <div className="flex items-center gap-2">
                     <StatusBadge status={app.status ?? 'new'} />
-                    <Link href={`/admin/applicants/${app.id}`} className="text-xs text-orange-500 hover:underline">
+                    <Link href={`/${locale}/admin/applicants/${app.id}`} className="text-xs text-orange-500 hover:underline">
                       Detail →
                     </Link>
                   </div>
