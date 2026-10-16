@@ -26,7 +26,7 @@ export default async function CandidateProfilePage({
   const locale = params.locale
 
   const [{ data: questionnaires }, { data: applications }] = await Promise.all([
-    supabase.from('questionnaires').select('id, first_name, last_name, phone, created_at, status').eq('email', email).order('created_at', { ascending: false }),
+    supabase.from('questionnaires').select('id, first_name, last_name, phone, street, city, zip, created_at, status').eq('email', email).order('created_at', { ascending: false }),
     supabase.from('applicants').select('id, first_name, last_name, created_at, status, jobs(title)').eq('email', email).order('created_at', { ascending: false }),
   ])
 
@@ -41,8 +41,10 @@ export default async function CandidateProfilePage({
     )
   }
 
-  const first = questionnaires?.[0] ?? applications?.[0]
+  const q0 = questionnaires?.[0]
+  const first = q0 ?? applications?.[0]
   const fullName = first ? `${first.first_name} ${first.last_name}` : email
+  const address = q0 ? [q0.street, q0.city, q0.zip].filter(Boolean).join(', ') : null
   const formatDate = (d?: string | null) => d ? new Date(d).toLocaleDateString('cs-CZ') : '—'
 
   return (
@@ -50,12 +52,15 @@ export default async function CandidateProfilePage({
       <div className="max-w-2xl mx-auto px-4 py-8">
 
         {/* Hlavička */}
-        <Link href={`/${locale}/admin`} className="text-xs text-gray-400 hover:text-gray-600 mb-1 inline-block">
+        <Link href={`/${locale}/admin`} className="text-xs text-gray-400 hover:text-gray-600 mb-2 inline-block">
           ← Zpět na přehled
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900 mb-0.5">{fullName}</h1>
-        <div className="text-sm text-gray-400">{email}</div>
-        <div className="text-sm text-gray-400 mb-6">{questionnaires?.[0]?.phone ?? '—'}</div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-3">{fullName}</h1>
+        <div className="text-sm text-gray-500 space-y-1 mb-6">
+          {address && <div><span className="text-gray-400">Adresa:</span> {address}</div>}
+          {q0?.phone && <div><span className="text-gray-400">Telefon:</span> {q0.phone}</div>}
+          <div><span className="text-gray-400">Email:</span> {email}</div>
+        </div>
 
         {/* Přihlášky */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-4">
