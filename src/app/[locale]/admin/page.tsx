@@ -33,7 +33,7 @@ const itemCard = (href: string, title: string, subtitle: string | null, date: st
       <Link href={href} className="text-sm font-medium hover:underline" style={{ color: '#1a1a1a', textDecoration: 'none' }}>{title}</Link>
       {subtitle && <div className="text-xs text-gray-400 mt-0.5">{subtitle}</div>}
       {email && (
-        <Link href={`/admin/candidates/${encodeURIComponent(email)}`} className="text-xs mt-1 inline-block" style={{ color: '#2a4f2d' }}>
+        <Link href={`/cs/admin/candidates/${encodeURIComponent(email)}`} className="text-xs mt-1 inline-block" style={{ color: '#2a4f2d' }}>
           👤 Profil
         </Link>
       )}
