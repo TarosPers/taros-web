@@ -20,7 +20,6 @@ const t = {
     deleting: 'Mažu...',
     confirmDelete: 'Opravdu smazat tento dotazník? Tuto akci nelze vrátit zpět.',
     generateProfile: 'Vygenerovat profil',
-    candidateProfile: 'Profil kandidáta',
     status: 'Stav',
     notes: 'Interní poznámky',
     notesPlaceholder: 'Poznámky viditelné pouze v administraci...',
@@ -53,7 +52,6 @@ const t = {
     deleting: 'Lösche...',
     confirmDelete: 'Diesen Fragebogen wirklich löschen? Dies kann nicht rückgängig gemacht werden.',
     generateProfile: 'Profil generieren',
-    candidateProfile: 'Kandidatenprofil',
     status: 'Status',
     notes: 'Interne Notizen',
     notesPlaceholder: 'Notizen nur in der Verwaltung sichtbar...',
@@ -132,6 +130,8 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
     withdrew:  { bg: '#f3f4f6', color: '#6b7280' },
   }
 
+  const address = [data.street, data.city, data.zip].filter(Boolean).join(', ')
+
   const field = (label: string, value: string | null | undefined) => value ? (
     <div className="mb-3">
       <div className="text-xs text-gray-400 uppercase tracking-wide mb-0.5">{label}</div>
@@ -141,26 +141,32 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
 
   return (
     <div className="max-w-3xl">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="text-sm text-gray-400 hover:text-gray-600">{tr.back}</button>
-          <h1 className="text-xl font-medium" style={{ color: '#1a1a1a' }}>
-            {data.first_name} {data.last_name}
-          </h1>
-          <span className="text-xs text-gray-400">
-            {new Date(data.created_at).toLocaleDateString('cs-CZ')}
-          </span>
+      <div className="flex items-start justify-between mb-6">
+        <div className="flex items-start gap-3">
+          <button onClick={() => router.back()} className="text-sm text-gray-400 hover:text-gray-600 mt-1">{tr.back}</button>
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-medium" style={{ color: '#1a1a1a' }}>
+                {data.first_name} {data.last_name}
+              </h1>
+              <span className="text-xs text-gray-400">
+                {new Date(data.created_at).toLocaleDateString('cs-CZ')}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
+              {data.phone && (
+                <span className="text-xs text-gray-500">📞 {data.phone}</span>
+              )}
+              {data.email && (
+                <span className="text-xs text-gray-500">✉️ {data.email}</span>
+              )}
+              {address && (
+                <span className="text-xs text-gray-500">📍 {address}</span>
+              )}
+            </div>
+          </div>
         </div>
         <div className="flex items-center gap-3">
-          {data.email && (
-            <Link
-              href={`/${locale}/admin/candidates/${encodeURIComponent(data.email)}`}
-              className="text-xs px-3 py-1.5 rounded-lg border font-medium"
-              style={{ borderColor: '#6366f1', color: '#6366f1' }}
-            >
-              👤 {tr.candidateProfile}
-            </Link>
-          )}
           <Link
             href={`/${locale}/admin/questionnaires/${params.id}/profile`}
             className="text-xs px-3 py-1.5 rounded-lg border font-medium"
