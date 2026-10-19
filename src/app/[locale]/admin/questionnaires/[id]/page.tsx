@@ -140,7 +140,7 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
   ) : null
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-5xl">
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-start gap-3">
           <button onClick={() => router.back()} className="text-sm text-gray-400 hover:text-gray-600 mt-1">{tr.back}</button>
@@ -154,15 +154,9 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
               </span>
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
-              {data.phone && (
-                <span className="text-xs text-gray-500">📞 {data.phone}</span>
-              )}
-              {data.email && (
-                <span className="text-xs text-gray-500">✉️ {data.email}</span>
-              )}
-              {address && (
-                <span className="text-xs text-gray-500">📍 {address}</span>
-              )}
+              {data.phone && <span className="text-xs text-gray-500">📞 {data.phone}</span>}
+              {data.email && <span className="text-xs text-gray-500">✉️ {data.email}</span>}
+              {address && <span className="text-xs text-gray-500">📍 {address}</span>}
             </div>
           </div>
         </div>
@@ -218,7 +212,7 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
 
         <div className="bg-white rounded-xl border border-gray-100 p-6">
           <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>{tr.personal}</h2>
-          <div className="grid grid-cols-2 gap-x-6">
+          <div className="grid grid-cols-3 gap-x-6">
             {field(tr.fields.firstName, data.first_name)}
             {field(tr.fields.lastName, data.last_name)}
             {field(tr.fields.birthDate, data.birth_date)}
@@ -229,7 +223,7 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
 
         <div className="bg-white rounded-xl border border-gray-100 p-6">
           <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>{tr.contact}</h2>
-          <div className="grid grid-cols-2 gap-x-6">
+          <div className="grid grid-cols-3 gap-x-6">
             {field(tr.fields.email, data.email)}
             {field(tr.fields.phone, data.phone)}
             {field(tr.fields.street, data.street)}
@@ -239,7 +233,7 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
 
         <div className="bg-white rounded-xl border border-gray-100 p-6">
           <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>{tr.work}</h2>
-          <div className="grid grid-cols-2 gap-x-6">
+          <div className="grid grid-cols-3 gap-x-6">
             {field(tr.fields.profese, [data.profese, data.profese_jina].filter(Boolean).join(', '))}
             {field(tr.fields.startDate, data.start_date)}
             {field(tr.fields.german, data.german)}
@@ -252,7 +246,7 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
 
         <div className="bg-white rounded-xl border border-gray-100 p-6">
           <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>{tr.education}</h2>
-          <div className="grid grid-cols-2 gap-x-6">
+          <div className="grid grid-cols-3 gap-x-6">
             {field(tr.fields.primarySchool, data.primary_school)}
             {field(tr.fields.education, data.education)}
             {field(tr.fields.educationDetail, data.education_detail)}
@@ -261,9 +255,11 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
 
         <div className="bg-white rounded-xl border border-gray-100 p-6">
           <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>{tr.experience}</h2>
-          {field(tr.fields.job1, data.job1)}
-          {field(tr.fields.job2, data.job2)}
-          {field(tr.fields.job3, data.job3)}
+          <div className="grid grid-cols-3 gap-x-6">
+            {field(tr.fields.job1, data.job1)}
+            {field(tr.fields.job2, data.job2)}
+            {field(tr.fields.job3, data.job3)}
+          </div>
         </div>
 
         {data.message && (
