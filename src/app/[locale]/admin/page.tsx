@@ -24,7 +24,15 @@ const statusBadge = (status: string) => {
   )
 }
 
-const itemCard = (href: string, title: string, subtitle: string | null, date: string, status: string, email?: string) => (
+const itemCard = (
+  href: string,
+  title: string,
+  subtitle: string | null,
+  date: string,
+  status: string,
+  profileHref?: string,
+  profileLabel?: string
+) => (
   <div
     key={href}
     className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-4 py-3 hover:border-orange-200 transition-colors"
@@ -32,9 +40,9 @@ const itemCard = (href: string, title: string, subtitle: string | null, date: st
     <div>
       <Link href={href} className="text-sm font-medium hover:underline" style={{ color: '#1a1a1a', textDecoration: 'none' }}>{title}</Link>
       {subtitle && <div className="text-xs text-gray-400 mt-0.5">{subtitle}</div>}
-      {email && (
-        <Link href={`/cs/admin/candidates/${encodeURIComponent(email)}`} className="text-xs mt-1 inline-block" style={{ color: '#2a4f2d' }}>
-          👤 Profil
+      {profileHref && (
+        <Link href={profileHref} className="text-xs mt-1 inline-block" style={{ color: '#2a4f2d' }}>
+          📋 {profileLabel ?? 'Dotazník'}
         </Link>
       )}
     </div>
@@ -70,6 +78,34 @@ export default async function AdminDashboard() {
   const { count: totalApplicants } = await supabase
     .from('applicants')
     .select('id', { count: 'exact', head: true })
+
+  // Pro přihlášky: mapa email → nejnovější questionnaire id
+  const applicantEmails = [...new Set((applicants ?? []).map(a => a.email).filter(Boolean))]
+  let emailToQId: Record<string, string> = {}
+  if (applicantEmails.length > 0) {
+    const { data: qByEmail } = await supabase
+      .from('questionnaires')
+      .select('id, email, created_at')
+      .in('email', applicantEmails)
+      .order('created_at', { ascending: false })
+    // vezmi nejnovější dotazník pro každý email
+    for (const q of qByEmail ?? []) {
+      if (!emailToQId[q.email]) emailToQId[q.email] = q.id
+    }
+  }
+
+  // Pro dotazníky: mapa email → počet přihlášek
+  const qEmails = [...new Set((questionnaires ?? []).map(q => q.email).filter(Boolean))]
+  let emailToAppCount: Record<string, number> = {}
+  if (qEmails.length > 0) {
+    const { data: appsByEmail } = await supabase
+      .from('applicants')
+      .select('email')
+      .in('email', qEmails)
+    for (const a of appsByEmail ?? []) {
+      emailToAppCount[a.email] = (emailToAppCount[a.email] ?? 0) + 1
+    }
+  }
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr)
@@ -121,24 +157,30 @@ export default async function AdminDashboard() {
             </div>
           ) : (
             <div className="space-y-2">
-              {newQ.map((q) => itemCard(
-                `/admin/questionnaires/${q.id}`,
-                `${q.first_name} ${q.last_name}`,
-                q.profese ?? null,
-                formatDate(q.created_at),
-                q.status,
-                q.email
-              ))}
+              {newQ.map((q) => {
+                const appCount = emailToAppCount[q.email] ?? 0
+                const subtitle = [q.profese, appCount > 0 ? `${appCount} přihláška${appCount > 1 ? (appCount < 5 ? 'y' : '') : ''}` : null].filter(Boolean).join(' · ')
+                return itemCard(
+                  `/admin/questionnaires/${q.id}`,
+                  `${q.first_name} ${q.last_name}`,
+                  subtitle || null,
+                  formatDate(q.created_at),
+                  q.status
+                )
+              })}
               {inProgressQ.length > 0 && (
                 <CollapsibleSection label={`Probíhající (${inProgressQ.length})`}>
-                  {inProgressQ.map((q) => itemCard(
-                    `/admin/questionnaires/${q.id}`,
-                    `${q.first_name} ${q.last_name}`,
-                    q.profese ?? null,
-                    formatDate(q.created_at),
-                    q.status,
-                    q.email
-                  ))}
+                  {inProgressQ.map((q) => {
+                    const appCount = emailToAppCount[q.email] ?? 0
+                    const subtitle = [q.profese, appCount > 0 ? `${appCount} přihláška${appCount > 1 ? (appCount < 5 ? 'y' : '') : ''}` : null].filter(Boolean).join(' · ')
+                    return itemCard(
+                      `/admin/questionnaires/${q.id}`,
+                      `${q.first_name} ${q.last_name}`,
+                      subtitle || null,
+                      formatDate(q.created_at),
+                      q.status
+                    )
+                  })}
                 </CollapsibleSection>
               )}
             </div>
@@ -164,7 +206,8 @@ export default async function AdminDashboard() {
                 `přihláška #${String(a.id).slice(0, 6)}`,
                 formatDate(a.created_at),
                 a.status,
-                a.email
+                emailToQId[a.email] ? `/admin/questionnaires/${emailToQId[a.email]}` : undefined,
+                'Dotazník'
               ))}
               {inProgressA.length > 0 && (
                 <CollapsibleSection label={`Probíhající (${inProgressA.length})`}>
@@ -174,7 +217,8 @@ export default async function AdminDashboard() {
                     `přihláška #${String(a.id).slice(0, 6)}`,
                     formatDate(a.created_at),
                     a.status,
-                    a.email
+                    emailToQId[a.email] ? `/admin/questionnaires/${emailToQId[a.email]}` : undefined,
+                    'Dotazník'
                   ))}
                 </CollapsibleSection>
               )}
