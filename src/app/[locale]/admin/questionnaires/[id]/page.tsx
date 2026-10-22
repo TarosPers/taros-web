@@ -222,7 +222,18 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>{tr.contact}</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-medium" style={{ color: '#1a1a1a' }}>{tr.contact}</h2>
+            {data.email && (
+              <a
+                href={`mailto:${data.email}?subject=${encodeURIComponent('Vaše práce u Taros Personal')}`}
+                className="text-xs px-3 py-1.5 rounded-lg font-medium text-white"
+                style={{ background: '#2a4f2d' }}
+              >
+                ✉️ {lang === 'de' ? 'Antworten' : 'Odpovědět'}
+              </a>
+            )}
+          </div>
           <div className="grid grid-cols-3 gap-x-6">
             {field(tr.fields.email, data.email)}
             {field(tr.fields.phone, data.phone)}
