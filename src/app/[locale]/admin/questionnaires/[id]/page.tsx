@@ -225,13 +225,34 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-medium" style={{ color: '#1a1a1a' }}>{tr.contact}</h2>
             {data.email && (
-              <a
-                href={`mailto:${data.email}?subject=${encodeURIComponent('Vaše práce u Taros Personal')}`}
-                className="text-xs px-3 py-1.5 rounded-lg font-medium text-white"
-                style={{ background: '#2a4f2d' }}
-              >
-                ✉️ {lang === 'de' ? 'Antworten' : 'Odpovědět'}
-              </a>
+              <div className="relative group">
+                <button
+                  className="text-xs px-3 py-1.5 rounded-lg font-medium text-white flex items-center gap-1"
+                  style={{ background: '#2a4f2d' }}
+                >
+                  ✉️ {lang === 'de' ? 'Antworten' : 'Odpovědět'} <span className="opacity-70">▾</span>
+                </button>
+                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 min-w-[240px] hidden group-hover:block">
+                  <a
+                    href={`mailto:${data.email}?subject=${encodeURIComponent('Vaše práce u Taros Personal')}&body=${encodeURIComponent(`Dobrý den, ${data.first_name},\n\nděkujeme za Váš zájem o práci u Taros Personal.\n\nRádi bychom Vás pozvali na osobní pohovor. Prosím, kontaktujte nás pro dohodnutí termínu.\n\nS pozdravem,\nTaros Personal`)}`}
+                    className="block px-4 py-2.5 text-xs text-gray-700 hover:bg-gray-50 rounded-t-xl"
+                  >
+                    📅 {lang === 'de' ? 'Einladung zum Vorstellungsgespräch' : 'Pozvání na pohovor'}
+                  </a>
+                  <a
+                    href={`mailto:${data.email}?subject=${encodeURIComponent('Vaše práce u Taros Personal – doplnění informací')}&body=${encodeURIComponent(`Dobrý den, ${data.first_name},\n\nděkujeme za vyplnění dotazníku.\n\nPro zpracování Vaší žádosti potřebujeme doplnit několik informací:\n\n- \n- \n\nS pozdravem,\nTaros Personal`)}`}
+                    className="block px-4 py-2.5 text-xs text-gray-700 hover:bg-gray-50 border-t border-gray-100"
+                  >
+                    📋 {lang === 'de' ? 'Bitte um Ergänzung' : 'Žádost o doplnění'}
+                  </a>
+                  <a
+                    href={`mailto:${data.email}?subject=${encodeURIComponent('Vaše práce u Taros Personal')}&body=${encodeURIComponent(`Dobrý den, ${data.first_name},\n\nděkujeme za Váš zájem o práci prostřednictvím Taros Personal.\n\nBohužel momentálně nemáme pracovní nabídku, která by odpovídala Vašemu profilu. Jakmile se situace změní, budeme Vás kontaktovat.\n\nS pozdravem,\nTaros Personal`)}`}
+                    className="block px-4 py-2.5 text-xs text-gray-700 hover:bg-gray-50 border-t border-gray-100 rounded-b-xl"
+                  >
+                    🙏 {lang === 'de' ? 'Derzeit keine passende Stelle' : 'Momentálně bez nabídky'}
+                  </a>
+                </div>
+              </div>
             )}
           </div>
           <div className="grid grid-cols-3 gap-x-6">
