@@ -29,7 +29,7 @@ const t = {
     download: 'Stáhnout',
     message: 'Zpráva uchazeče',
     statuses: {
-      new: 'Nový', reviewing: 'Probíhá', invited: 'Pozván', rejected: 'Zamítnut', hired: 'Přijat', withdrew: 'Odstoupil',
+      new: 'Nový', reviewing: 'Probíhá', pending_info: 'Doplnění údajů', invited: 'Pozván', rejected: 'Zamítnut', hired: 'Přijat', withdrew: 'Odstoupil',
     },
   },
   de: {
@@ -52,7 +52,7 @@ const t = {
     download: 'Herunterladen',
     message: 'Nachricht des Bewerbers',
     statuses: {
-      new: 'Neu', reviewing: 'In Bearbeitung', invited: 'Eingeladen', rejected: 'Abgelehnt', hired: 'Eingestellt', withdrew: 'Zurückgezogen',
+      new: 'Neu', reviewing: 'In Bearbeitung', pending_info: 'Angaben ergänzen', invited: 'Eingeladen', rejected: 'Abgelehnt', hired: 'Eingestellt', withdrew: 'Zurückgezogen',
     },
   },
 }
@@ -102,12 +102,13 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
   if (!applicant) return <div className="text-sm text-gray-400">{tr.notFound}</div>
 
   const statusColors: Record<string, { bg: string; color: string }> = {
-    new:       { bg: '#eff6ff', color: '#3b82f6' },
-    reviewing: { bg: '#fef3e6', color: '#e07b0a' },
-    invited:   { bg: '#eaf3e8', color: '#2a4f2d' },
-    rejected:  { bg: '#fef2f2', color: '#ef4444' },
-    hired:     { bg: '#2a4f2d', color: '#fff' },
-    withdrew:  { bg: '#f3f4f6', color: '#6b7280' },
+    new:          { bg: '#eff6ff', color: '#3b82f6' },
+    reviewing:    { bg: '#fef3e6', color: '#e07b0a' },
+    pending_info: { bg: '#fdf4ff', color: '#9333ea' },
+    invited:      { bg: '#eaf3e8', color: '#2a4f2d' },
+    rejected:     { bg: '#fef2f2', color: '#ef4444' },
+    hired:        { bg: '#2a4f2d', color: '#fff' },
+    withdrew:     { bg: '#f3f4f6', color: '#6b7280' },
   }
 
   const field = (label: string, value: string | null | undefined) => value ? (
