@@ -9,8 +9,8 @@ const supabase = createClient(
 )
 const resend = new Resend(process.env.RESEND_API_KEY)
 const ADMIN_EMAILS = ['t.strnad@taros-personal.de', 'j.simsa@taros-personal.de']
+const MAKE_EMAIL = '97dv7wspqu6l9wifj83imrk5ldfbls7l@hook.eu2.make.com'
 const FROM_EMAIL = 'Taros Personal <info@taros-personal.cz>'
-const MAKE_WEBHOOK_URL = 'https://hook.eu2.make.com/5klx17dwbnrtt89lc2p7dpzwh285fpkh'
 
 async function appendToSheet(data: Record<string, any>, profese: string) {
   try {
@@ -73,44 +73,6 @@ async function appendToSheet(data: Record<string, any>, profese: string) {
     })
   } catch (err) {
     console.error('Google Sheets error:', err)
-  }
-}
-
-async function sendToMakeWebhook(data: Record<string, any>, profese: string) {
-  try {
-    await fetch(MAKE_WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        firstName: data.firstName,
-        lastName: data.lastName,
-        phone: data.phone,
-        email: data.email,
-        street: data.street,
-        zip: data.zip,
-        city: data.city,
-        birthDate: data.birthDate,
-        nationality: data.nationality,
-        maritalStatus: data.maritalStatus,
-        profese,
-        profeseJina: data.profeseJina,
-        startDate: data.startDate,
-        german: data.german,
-        workType: data.workType,
-        drivingLicense: data.drivingLicense,
-        vzvLicense: data.vzvLicense,
-        hasCar: data.hasCar,
-        primarySchool: data.primarySchool,
-        education: data.education,
-        educationDetail: data.educationDetail,
-        job1: data.job1,
-        job2: data.job2,
-        job3: data.job3,
-        message: data.message,
-      }),
-    })
-  } catch (err) {
-    console.error('Make webhook error:', err)
   }
 }
 
@@ -200,10 +162,14 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData()
     const data: Record<string, any> = {}
     const files: Record<string, File> = {}
+    const profeseList: string[] = []
 
     for (const [key, value] of formData.entries()) {
       if (value instanceof File) {
         files[key] = value
+      } else if (key === 'profese_list') {
+        // Nový dvouúrovňový selektor — každá pozice jako samostatná hodnota
+        profeseList.push(value as string)
       } else {
         if (data[key]) {
           data[key] = Array.isArray(data[key]) ? [...data[key], value] : [data[key], value]
@@ -227,7 +193,10 @@ export async function POST(req: NextRequest) {
       attachments.push({ filename: `cv-${data.firstName}-${data.lastName}.${ext}`, content: buffer })
     }
 
-    const profese = Array.isArray(data.profese) ? data.profese.join(', ') : (data.profese ?? '')
+    // Pro zpětnou kompatibilitu (Google Sheets, emaily) — join do stringu
+    const profese = profeseList.length > 0
+      ? profeseList.join(', ')
+      : (Array.isArray(data.profese) ? data.profese.join(', ') : (data.profese ?? ''))
 
     // 1. Uložit do Supabase — kritické, musí projít
     const { error: dbError } = await supabase.from('questionnaires').insert({
@@ -241,7 +210,8 @@ export async function POST(req: NextRequest) {
       birth_date: data.birthDate,
       nationality: data.nationality,
       marital_status: data.maritalStatus,
-      profese,
+      profese,                          // starý string sloupec — zachován pro kompatibilitu
+      profese_list: profeseList,        // nový text[] sloupec
       profese_jina: data.profeseJina,
       start_date: data.startDate,
       german: data.german,
@@ -264,12 +234,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Database error' }, { status: 500 })
     }
 
-    // 2. Google Sheets — nekritické
+    // 2. Google Sheets — nekritické, chyby se logují ale neblokují
     await appendToSheet(data, profese)
 
-    // 3. Make webhook (Excel) — nekritické
-    await sendToMakeWebhook(data, profese)
-
+    // Popisky u admin e-mailu jsou dvojjazyčné (CS / DE) – příjemci jsou i němečtí kolegové
     const YES_NO: Record<string, string> = {
       ano: 'ano / ja',
       ne: 'ne / nein',
@@ -296,37 +264,6 @@ export async function POST(req: NextRequest) {
       vs: 'Vysoká škola / Hochschule/Universität',
     }
 
-    const PROFESE_MAP: Record<string, string> = {
-      'Automechanik': 'Kfz-Mechaniker',
-      'CNC obsluha': 'CNC-Bediener',
-      'Lakýrník': 'Lackierer',
-      'Strojník (bagr)': 'Baggerführer',
-      'Svářeč CO2, MIG, MAG (135)': 'Schweißer CO2, MIG, MAG (135)',
-      'Řidič vysokozdvižného vozíku': 'Staplerfahrer',
-      'Výrobní linka': 'Produktionslinie',
-      'Zdravotní sestra': 'Krankenpfleger/in',
-      'Brusič': 'Schleifer',
-      'Elektrikář': 'Elektriker',
-      'Skladník': 'Lagerarbeiter',
-      'Svářeč TIG, WIG (141)': 'Schweißer TIG, WIG (141)',
-      'Řidič LKW': 'LKW-Fahrer',
-      'Truhlář': 'Tischler',
-      'Zámečník': 'Schlosser',
-      'nic z výše uvedeného': 'keines der oben genannten',
-    }
-
-    function translateProfese(profeseCsv: string) {
-      return profeseCsv
-        .split(',')
-        .map(p => p.trim())
-        .filter(Boolean)
-        .map(p => {
-          const de = PROFESE_MAP[p]
-          return de ? `${p} / ${de}` : p
-        })
-        .join(', ')
-    }
-
     const workTypeLabel = data.workType === 'pendler'
       ? 'Pendler (denní dojíždění) / Pendler (tägliches Pendeln)'
       : data.workType === 'ubytovani'
@@ -344,7 +281,7 @@ export async function POST(req: NextRequest) {
       `)}
 
       ${section('Profese a pracovní podmínky / Beruf und Arbeitsbedingungen', `
-        ${row1('Poptávané profese / Gesuchte Berufe', translateProfese(profese) + (data.profeseJina ? ', ' + data.profeseJina : ''))}
+        ${row1('Poptávané profese / Gesuchte Berufe', profese + (data.profeseJina ? ', ' + data.profeseJina : ''))}
         ${row2('Nástup / Arbeitsbeginn', data.startDate, 'Němčina / Deutschkenntnisse', GERMAN_LEVELS[data.german] ?? data.german)}
         ${row2('Typ práce / Arbeitsart', workTypeLabel, 'Řidičský průkaz / Führerschein', YES_NO[data.drivingLicense] ?? data.drivingLicense)}
         ${row2('Průkaz VZV / Gabelstapler-Schein', YES_NO[data.vzvLicense] ?? data.vzvLicense, 'Automobil / Fahrzeug', YES_NO[data.hasCar] ?? data.hasCar)}
@@ -366,11 +303,11 @@ export async function POST(req: NextRequest) {
       ${attachments.length > 0 ? `<p style="color:#999;font-size:11px;margin-top:12px;">📎 Přílohy / Anhänge: ${attachments.map(a => a.filename).join(', ')}</p>` : ''}
     `)
 
-    // 4. Email na adminy — nekritické
+    // 3. Email na adminy + Make hook — nekritické, ale logujeme
     try {
       await resend.emails.send({
         from: FROM_EMAIL,
-        to: ADMIN_EMAILS,
+        to: [...ADMIN_EMAILS, MAKE_EMAIL],
         subject: `Nový dotazník: ${data.firstName} ${data.lastName}`,
         attachments: attachments.length > 0 ? attachments : undefined,
         html: adminHtml,
@@ -379,7 +316,7 @@ export async function POST(req: NextRequest) {
       console.error('Admin email error:', emailErr)
     }
 
-    // 5. Potvrzovací email uchazeči — nekritické
+    // 4. Potvrzovací email uchazeči — nekritické, neblokuje submit
     try {
       await resend.emails.send({
         from: FROM_EMAIL,

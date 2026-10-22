@@ -2,23 +2,177 @@
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 
-const PROFESE: { cs: string; de: string }[] = [
-  { cs: 'Automechanik',                          de: 'Kfz-Mechaniker' },
-  { cs: 'CNC obsluha',                           de: 'CNC-Bediener' },
-  { cs: 'Lakýrník',                              de: 'Lackierer' },
-  { cs: 'Strojník (bagr)',                       de: 'Baggerführer' },
-  { cs: 'Svářeč CO2, MIG, MAG (135)',            de: 'Schweißer CO2, MIG, MAG (135)' },
-  { cs: 'Řidič vysokozdvižného vozíku',          de: 'Staplerfahrer' },
-  { cs: 'Výrobní linka',                         de: 'Produktionslinie' },
-  { cs: 'Zdravotní sestra',                      de: 'Krankenpfleger/in' },
-  { cs: 'Brusič',                                de: 'Schleifer' },
-  { cs: 'Elektrikář',                            de: 'Elektriker' },
-  { cs: 'Skladník',                              de: 'Lagerarbeiter' },
-  { cs: 'Svářeč TIG, WIG (141)',                 de: 'Schweißer TIG, WIG (141)' },
-  { cs: 'Řidič LKW',                             de: 'LKW-Fahrer' },
-  { cs: 'Truhlář',                               de: 'Tischler' },
-  { cs: 'Zámečník',                              de: 'Schlosser' },
-  { cs: 'nic z výše uvedeného',                  de: 'keines der oben genannten' },
+// ─── SEZNAM PROFESÍ ────────────────────────────────────────────────────────
+const PROFESE_KATEGORIE: { cs: string; pozice: string[] }[] = [
+  {
+    cs: 'Výroba a průmysl',
+    pozice: [
+      'Pomocný pracovník ve výrobě','Operátor výroby','Dělník ve výrobě',
+      'Montážní pracovník','Pracovník kompletace','Pracovník dokončovací výroby',
+      'Obsluha výrobní linky','Obsluha stroje','Seřizovač strojů','Strojní operátor',
+      'Kontrolor kvality','Pracovník výstupní kontroly','Pracovník balení','Balič / balička',
+      'Třídič výrobků','Pracovník lisovny','Obsluha vstřikolisu','Obsluha CNC',
+      'CNC operátor','CNC seřizovač','Pracovník plastikářské výroby',
+      'Pracovník automobilového průmyslu','Montážník autodílů',
+      'Pracovník potravinářské výroby','Pracovník textilní výroby',
+      'Pracovník dřevozpracující výroby',
+    ],
+  },
+  {
+    cs: 'Sklady a logistika',
+    pozice: [
+      'Skladník','Pomocný skladník','Řidič VZV','Řidič retraku','Komisionář',
+      'Picker / pracovník vychystávání','Pracovník expedice','Pracovník příjmu zboží',
+      'Pracovník balení zásilek','Třídič zásilek','Manipulant','Nakladač / vykladač',
+      'Inventurní pracovník','Logistik','Disponent dopravy','Vedoucí skladu',
+      'Koordinátor logistiky','Operátor skladu',
+    ],
+  },
+  {
+    cs: 'Kovovýroba a strojírenství',
+    pozice: [
+      'Svářeč MIG/MAG','Svářeč TIG/WIG','Svářeč elektrodou','Zámečník',
+      'Strojní zámečník','Průmyslový zámečník','Montážní zámečník','Kovodělník',
+      'Obráběč kovů','Soustružník','Frézař','Brusič kovů','Nástrojař','Klempíř',
+      'Potrubář','Montér ocelových konstrukcí','Obsluha ohraňovacího lisu',
+      'Obsluha laserového řezacího stroje','Pracovník povrchových úprav',
+      'Lakýrník kovů','Pískovač','Slévač','Pracovník slévárny','Konstruktér',
+      'Technik výroby','Mistr výroby',
+    ],
+  },
+  {
+    cs: 'Elektrotechnika',
+    pozice: [
+      'Elektrikář','Průmyslový elektrikář','Stavební elektrikář','Elektromontér',
+      'Elektrotechnik','Elektromechanik','Mechatronik','Servisní technik',
+      'Technik údržby','Technik automatizace','Programátor PLC','Montér rozvaděčů',
+      'Elektrokonstruktér','Technik měření a regulace','Instalatér fotovoltaiky',
+      'Technik fotovoltaických systémů','Montér kabelových tras',
+    ],
+  },
+  {
+    cs: 'Automobilový průmysl',
+    pozice: [
+      'Automechanik','Autoelektrikář','Autolakýrník','Autoklempíř','Karosář',
+      'Mechanik nákladních vozidel','Mechanik autobusů','Pneuservisní pracovník',
+      'Montážník automobilů','Kontrolor automobilových dílů',
+      'Pracovník výroby autosedaček','Pracovník lakovny',
+      'Obsluha robotické linky','Diagnostik vozidel',
+    ],
+  },
+  {
+    cs: 'Stavebnictví',
+    pozice: [
+      'Zedník','Pomocný stavební dělník','Tesař','Pokrývač','Klempíř','Instalatér',
+      'Topenář','Obkladač','Sádrokartonář','Malíř / natěrač','Fasádník','Lešenář',
+      'Betonář','Železář','Izolatér','Podlahář','Montér oken a dveří',
+      'Montér vzduchotechniky','Montér suchých staveb','Stavební elektrikář',
+      'Bagrista','Jeřábník','Obsluha stavebních strojů','Stavbyvedoucí',
+      'Stavební technik','Rozpočtář staveb',
+    ],
+  },
+  {
+    cs: 'Doprava',
+    pozice: [
+      'Řidič kamionu C+E','Řidič nákladního vozidla C','Řidič dodávky','Kurýr',
+      'Řidič autobusu','Řidič MHD','Řidič osobní dopravy','Řidič cisterny',
+      'Řidič stavebních vozidel','Řidič odtahového vozidla','Řidič popelářského vozu',
+      'Řidič zemědělských strojů','Dispečer dopravy','Speditér',
+    ],
+  },
+  {
+    cs: 'Hotely a gastronomie',
+    pozice: [
+      'Kuchař','Pomocný kuchař','Šéfkuchař','Pekař','Cukrář','Číšník / servírka',
+      'Barman','Barista','Pomocná síla do kuchyně','Myč nádobí','Pokojská',
+      'Hotelový pracovník','Recepční','Pracovník snídaňového servisu',
+      'Pracovník hotelového úklidu','Vedoucí restaurace','Hotelový manažer',
+      'Pracovník cateringu',
+    ],
+  },
+  {
+    cs: 'Úklid a facility management',
+    pozice: [
+      'Uklízeč / uklízečka','Pracovník průmyslového úklidu','Pracovník úklidu kanceláří',
+      'Pracovník úklidu hotelů','Pracovník úklidu nemocnic','Čistič strojů',
+      'Čistič výrobních hal','Správce budovy','Údržbář','Domovník',
+      'Pracovník technické správy budov','Pracovník prádelny',
+    ],
+  },
+  {
+    cs: 'Zdravotnictví a sociální péče',
+    pozice: [
+      'Zdravotní sestra','Praktická sestra','Pečovatel / pečovatelka','Ošetřovatel',
+      'Sanitář','Fyzioterapeut','Ergoterapeut','Lékař','Zubní lékař','Zubní asistent',
+      'Laborant','Farmaceut','Pracovník domova seniorů','Sociální pracovník',
+      'Osobní asistent',
+    ],
+  },
+  {
+    cs: 'Zemědělství a lesnictví',
+    pozice: [
+      'Zemědělský pracovník','Pomocník na farmě','Pracovník živočišné výroby',
+      'Ošetřovatel zvířat','Dojič','Traktorista','Obsluha zemědělských strojů',
+      'Pracovník sklizně','Sběrač ovoce a zeleniny','Zahradník','Pracovník skleníku',
+      'Lesní dělník','Dřevorubec','Obsluha lesních strojů','Pracovník pily',
+    ],
+  },
+  {
+    cs: 'Dřevozpracující a nábytkářský průmysl',
+    pozice: [
+      'Truhlář','Stolař','Nábytkář','Montážník nábytku',
+      'Obsluha dřevoobráběcích strojů','Obsluha CNC na dřevo','Pracovník pily',
+      'Pracovník výroby oken','Pracovník výroby dveří','Brusič dřeva',
+      'Lakýrník nábytku','Čalouník','Pracovník výroby kuchyní',
+    ],
+  },
+  {
+    cs: 'Potravinářství',
+    pozice: [
+      'Pracovník potravinářské výroby','Řezník','Uzenář','Bourač masa',
+      'Pracovník masokombinátu','Pekař','Cukrář','Pracovník mlékárny',
+      'Pracovník výroby nápojů','Obsluha balicí linky','Kontrolor kvality potravin',
+      'Pracovník mrazírny','Pracovník třídění potravin',
+    ],
+  },
+  {
+    cs: 'Administrativa a kancelář',
+    pozice: [
+      'Administrativní pracovník','Asistent / asistentka','Recepční','Fakturant',
+      'Účetní','Mzdová účetní','Personalista','Náborář','HR specialista',
+      'Obchodní referent','Referent zákaznického servisu','Pracovník zákaznické podpory',
+      'Nákupčí','Disponent','Plánovač výroby','Koordinátor zakázek','Vedoucí kanceláře',
+    ],
+  },
+  {
+    cs: 'IT a technické profese',
+    pozice: [
+      'Programátor','Webový vývojář','Frontend developer','Backend developer',
+      'Full-stack developer','IT administrátor','Správce sítí','IT technik',
+      'Specialista kybernetické bezpečnosti','Datový analytik','Softwarový tester',
+      'DevOps engineer','Cloud engineer','IT projektový manažer','CAD konstruktér',
+      'Strojní inženýr','Procesní inženýr','Technolog výroby',
+    ],
+  },
+  {
+    cs: 'Obchod a maloobchod',
+    pozice: [
+      'Prodavač / prodavačka','Pokladní','Doplňovač zboží','Pracovník supermarketu',
+      'Pracovník čerpací stanice','Skladník prodejny','Vedoucí směny',
+      'Vedoucí prodejny','Obchodní zástupce','Obchodní manažer','Pracovník e-shopu',
+      'Pracovník zákaznického centra',
+    ],
+  },
+  {
+    cs: 'Ostatní profese a služby',
+    pozice: [
+      'Bezpečnostní pracovník','Ostraha objektů','Pracovník letiště',
+      'Pracovník odbavení zavazadel','Pracovník poštovních služeb',
+      'Pracovník komunálních služeb','Pracovník odpadového hospodářství',
+      'Technik recyklace','Kadeřník','Kosmetička','Masér','Plavčík',
+      'Animátor','Sportovní trenér','Pracovník sezónních služeb',
+    ],
+  },
 ]
 
 interface Props { locale: string }
@@ -49,6 +203,90 @@ function AutoRedirect({ locale }: { locale: string }) {
   )
 }
 
+// ─── ACCORDION SELEKTOR ────────────────────────────────────────────────────
+function ProfeseSelector({
+  isDE,
+  selected,
+  onChange,
+}: {
+  isDE: boolean
+  selected: string[]
+  onChange: (val: string[]) => void
+}) {
+  const [openCat, setOpenCat] = useState<string | null>(null)
+
+  const toggle = (pozice: string) => {
+    onChange(
+      selected.includes(pozice)
+        ? selected.filter(p => p !== pozice)
+        : [...selected, pozice]
+    )
+  }
+
+  const catCount = (cat: { pozice: string[] }) =>
+    cat.pozice.filter(p => selected.includes(p)).length
+
+  return (
+    <div className="space-y-1">
+      {PROFESE_KATEGORIE.map((cat) => {
+        const count = catCount(cat)
+        const isOpen = openCat === cat.cs
+        return (
+          <div key={cat.cs} className="border border-gray-100 rounded-lg overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setOpenCat(isOpen ? null : cat.cs)}
+              className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-gray-50 transition-colors"
+            >
+              <span className="text-sm text-gray-700">{cat.cs}</span>
+              <div className="flex items-center gap-2">
+                {count > 0 && (
+                  <span
+                    className="text-xs px-2 py-0.5 rounded-full font-medium"
+                    style={{ background: '#eaf3e8', color: '#2a4f2d' }}
+                  >
+                    {count}
+                  </span>
+                )}
+                <svg
+                  className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </button>
+            {isOpen && (
+              <div className="px-4 pb-3 pt-1 bg-gray-50 grid grid-cols-2 gap-x-4 gap-y-1.5">
+                {cat.pozice.map((p) => (
+                  <label key={p} className="flex items-center gap-2 cursor-pointer text-sm text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(p)}
+                      onChange={() => toggle(p)}
+                      className="accent-green-700 w-4 h-4 flex-shrink-0"
+                    />
+                    {p}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })}
+      {selected.length > 0 && (
+        <div className="mt-2 p-3 rounded-lg text-xs" style={{ background: '#eaf3e8', color: '#2a4f2d' }}>
+          <span className="font-medium">
+            {isDE ? 'Ausgewählt' : 'Vybráno'} ({selected.length}):
+          </span>{' '}
+          {selected.join(', ')}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── HLAVNÍ FORMULÁŘ ───────────────────────────────────────────────────────
 export default function DotaznikForm({ locale }: Props) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [fotoFile, setFotoFile] = useState<File | null>(null)
@@ -56,6 +294,7 @@ export default function DotaznikForm({ locale }: Props) {
   const [chceCV, setChceCV] = useState(false)
   const [captchaAnswer, setCaptchaAnswer] = useState('')
   const [captcha, setCaptcha] = useState({ a: 0, b: 0 })
+  const [selectedProfese, setSelectedProfese] = useState<string[]>([])
 
   useEffect(() => {
     setCaptcha({ a: Math.floor(Math.random() * 10) + 1, b: Math.floor(Math.random() * 10) + 1 })
@@ -69,6 +308,10 @@ export default function DotaznikForm({ locale }: Props) {
       alert(isDE ? 'Captcha falsch!' : 'Špatná odpověď na ověření!')
       return
     }
+    if (selectedProfese.length === 0 && !data.profeseJina) {
+      alert(isDE ? 'Bitte wählen Sie mindestens einen Beruf aus.' : 'Vyberte prosím alespoň jednu profesi.')
+      return
+    }
     setStatus('loading')
     try {
       const formData = new FormData()
@@ -79,6 +322,7 @@ export default function DotaznikForm({ locale }: Props) {
           formData.append(k, String(v ?? ''))
         }
       })
+      selectedProfese.forEach(p => formData.append('profese_list', p))
       if (fotoFile) formData.append('foto', fotoFile)
       if (cvFile) formData.append('cv', cvFile)
 
@@ -218,16 +462,19 @@ export default function DotaznikForm({ locale }: Props) {
         <h2 className={sectionTitle} style={{ color: '#2a4f2d' }}>
           {label('Poptávané profese', 'Gewünschte Berufe')}
         </h2>
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          {PROFESE.map((p) => (
-            <label key={p.cs} className="flex items-center gap-2 cursor-pointer text-sm text-gray-600">
-              <input type="checkbox" {...register('profese')} value={p.cs} className="accent-green-700 w-4 h-4" />
-              {isDE ? p.de : p.cs}
-            </label>
-          ))}
-        </div>
-        <div>
-          <label className="form-label">{label('Vámi poptávaná a neuvedená profese', 'Ihr gewünschter, nicht aufgeführter Beruf')}</label>
+        <p className="text-xs text-gray-400 mb-3">
+          {label(
+            'Klikněte na kategorii a vyberte konkrétní pozice.',
+            'Klicken Sie auf eine Kategorie und wählen Sie Positionen aus.'
+          )}
+        </p>
+        <ProfeseSelector
+          isDE={isDE}
+          selected={selectedProfese}
+          onChange={setSelectedProfese}
+        />
+        <div className="mt-4">
+          <label className="form-label">{label('Jiná profese (neuvedená výše)', 'Anderer Beruf (nicht aufgeführt)')}</label>
           <input {...register('profeseJina')} className={inputClass} placeholder={label('Uveďte profesi...', 'Beruf angeben...')} />
         </div>
       </div>
@@ -292,19 +539,19 @@ export default function DotaznikForm({ locale }: Props) {
                 </label>
               </div>
             </div>
-          <div>
-          <label className="form-label">{label('Máte průkaz VZV (vysokozdvižný vozík)?', 'Haben Sie einen Staplerschein?')}</label>
-          <div className="flex gap-6">
-    <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600">
-      <input type="radio" {...register('vzvLicense')} value="ano" className="accent-green-700" />
-      {label('ano', 'ja')}
-    </label>
-    <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600">
-      <input type="radio" {...register('vzvLicense')} value="ne" className="accent-green-700" />
-      {label('ne', 'nein')}
-    </label>
-          </div>
-          </div>
+            <div>
+              <label className="form-label">{label('Máte průkaz VZV (vysokozdvižný vozík)?', 'Haben Sie einen Staplerschein?')}</label>
+              <div className="flex gap-6">
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600">
+                  <input type="radio" {...register('vzvLicense')} value="ano" className="accent-green-700" />
+                  {label('ano', 'ja')}
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600">
+                  <input type="radio" {...register('vzvLicense')} value="ne" className="accent-green-700" />
+                  {label('ne', 'nein')}
+                </label>
+              </div>
+            </div>
           </div>
         </div>
       </div>
