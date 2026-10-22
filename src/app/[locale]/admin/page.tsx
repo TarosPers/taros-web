@@ -30,6 +30,7 @@ const itemCard = (
   subtitle: string | null,
   date: string,
   status: string,
+  hasNotes: boolean,
   profileHref?: string,
   profileLabel?: string
 ) => (
@@ -38,7 +39,10 @@ const itemCard = (
     className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-4 py-3 hover:border-orange-200 transition-colors"
   >
     <div>
-      <Link href={href} className="text-sm font-medium hover:underline" style={{ color: '#1a1a1a', textDecoration: 'none' }}>{title}</Link>
+      <div className="flex items-center gap-1.5">
+        <Link href={href} className="text-sm font-medium hover:underline" style={{ color: '#1a1a1a', textDecoration: 'none' }}>{title}</Link>
+        {hasNotes && <span title="Obsahuje poznámky" className="text-sm leading-none">📝</span>}
+      </div>
       {subtitle && <div className="text-xs text-gray-400 mt-0.5">{subtitle}</div>}
       {profileHref && (
         <Link href={profileHref} className="text-xs mt-1 inline-block" style={{ color: '#2a4f2d' }}>
@@ -56,13 +60,13 @@ const itemCard = (
 export default async function AdminDashboard() {
   const { data: questionnaires } = await supabase
     .from('questionnaires')
-    .select('id, first_name, last_name, email, profese, created_at, status')
+    .select('id, first_name, last_name, email, profese, created_at, status, notes')
     .in('status', ['new', 'reviewing', 'invited'])
     .order('created_at', { ascending: false })
 
   const { data: applicants } = await supabase
     .from('applicants')
-    .select('id, first_name, last_name, email, created_at, job_id, status')
+    .select('id, first_name, last_name, email, created_at, job_id, status, notes')
     .in('status', ['new', 'reviewing', 'invited'])
     .order('created_at', { ascending: false })
 
@@ -88,7 +92,6 @@ export default async function AdminDashboard() {
       .select('id, email, created_at')
       .in('email', applicantEmails)
       .order('created_at', { ascending: false })
-    // vezmi nejnovější dotazník pro každý email
     for (const q of qByEmail ?? []) {
       if (!emailToQId[q.email]) emailToQId[q.email] = q.id
     }
@@ -169,7 +172,8 @@ export default async function AdminDashboard() {
                   `${q.first_name} ${q.last_name}`,
                   subtitle || null,
                   formatDate(q.created_at),
-                  q.status
+                  q.status,
+                  !!q.notes
                 )
               })}
               {inProgressQ.length > 0 && (
@@ -182,7 +186,8 @@ export default async function AdminDashboard() {
                       `${q.first_name} ${q.last_name}`,
                       subtitle || null,
                       formatDate(q.created_at),
-                      q.status
+                      q.status,
+                      !!q.notes
                     )
                   })}
                 </CollapsibleSection>
@@ -210,6 +215,7 @@ export default async function AdminDashboard() {
                 `přihláška #${String(a.id).slice(0, 6)}`,
                 formatDate(a.created_at),
                 a.status,
+                !!a.notes,
                 emailToQId[a.email] ? `/admin/questionnaires/${emailToQId[a.email]}` : undefined,
                 'Dotazník'
               ))}
@@ -221,6 +227,7 @@ export default async function AdminDashboard() {
                     `přihláška #${String(a.id).slice(0, 6)}`,
                     formatDate(a.created_at),
                     a.status,
+                    !!a.notes,
                     emailToQId[a.email] ? `/admin/questionnaires/${emailToQId[a.email]}` : undefined,
                     'Dotazník'
                   ))}
