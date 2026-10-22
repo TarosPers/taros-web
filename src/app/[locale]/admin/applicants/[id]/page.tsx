@@ -68,6 +68,7 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
   const [lang, setLang] = useState<'cs' | 'de'>('cs')
+  const [replyOpen, setReplyOpen] = useState(false)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -174,18 +175,45 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>{tr.personalInfo}</h2>
-          <div className="grid grid-cols-2 gap-x-6">
-            {field(lang === 'de' ? 'Vorname' : 'Jméno', applicant.first_name)}
-            {field(lang === 'de' ? 'Nachname' : 'Příjmení', applicant.last_name)}
-            {field(lang === 'de' ? 'Geburtsdatum' : 'Datum narození', applicant.birth_date)}
-            {field(lang === 'de' ? 'Staatsangehörigkeit' : 'Národnost', applicant.nationality)}
-            {field(lang === 'de' ? 'Familienstand' : 'Rodinný stav', applicant.marital_status)}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-medium" style={{ color: '#1a1a1a' }}>{tr.contact}</h2>
+            {applicant.email && (
+              <div className="relative">
+                <button
+                  onClick={() => setReplyOpen(o => !o)}
+                  className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors"
+                  style={{ borderColor: '#e07b0a', color: '#e07b0a', background: 'transparent' }}
+                >
+                  ✉️ {lang === 'de' ? 'Antworten' : 'Odpovědět'} <span>▾</span>
+                </button>
+                {replyOpen && (
+                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 min-w-[260px]">
+                    <a
+                      href={`mailto:${applicant.email}?subject=${encodeURIComponent('Vaše práce u Taros Personal – doplnění informací')}&body=${encodeURIComponent(`Dobrý den,\n\nevidence zájem o pracovní pozici ${job ? (lang === 'de' ? job.title_de : job.title_cs) : '...'}\n\nPracovní pozice je stále aktuální, pro rychlejší a bezproblémové vyřízení žádosti prosím vyplňte následující dotazník. Jako přílohu je vhodné přiložit i profilovou fotografii – profil pak působí lépe. Můžete také přiložit životopis.\n\nPo zaslání žádost zpracujeme a budeme Vás informovat o dalších krocích.`)}`}
+                      onClick={() => setReplyOpen(false)}
+                      className="block px-4 py-2.5 text-xs text-gray-700 hover:bg-gray-50 rounded-t-xl"
+                    >
+                      📋 Žádost o vyplnění dotazníku
+                    </a>
+                    <a
+                      href={`mailto:${applicant.email}?subject=${encodeURIComponent('Pozvání na pohovor – Taros Personal')}&body=${encodeURIComponent(`Dobrý den,\n\nděkujeme za Váš zájem o práci u Taros Personal.\n\nRádi bych Vás pozval na osobní pohovor. Prosím, kontaktujte mne pro dohodnutí termínu.`)}`}
+                      onClick={() => setReplyOpen(false)}
+                      className="block px-4 py-2.5 text-xs text-gray-700 hover:bg-gray-50 border-t border-gray-100"
+                    >
+                      📅 Pozvání na pohovor
+                    </a>
+                    <a
+                      href={`mailto:${applicant.email}?subject=${encodeURIComponent('Vaše přihláška – Taros Personal')}&body=${encodeURIComponent(`Dobrý den,\n\nděkujeme za Váš zájem o práci u Taros Personal.\n\nBohužel momentálně nemáme odpovídající pracovní nabídku.\n\nSledujte naší aktuální nabídku na www.taros-personal.cz nebo na mém osobním profilu na Facebooku:\nhttps://www.facebook.com/profile.php?id=100079180028963`)}`}
+                      onClick={() => setReplyOpen(false)}
+                      className="block px-4 py-2.5 text-xs text-gray-700 hover:bg-gray-50 border-t border-gray-100 rounded-b-xl"
+                    >
+                      🙏 Momentálně bez nabídky
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-100 p-6">
-          <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>{tr.contact}</h2>
           <div className="grid grid-cols-2 gap-x-6">
             {field('E-mail', applicant.email)}
             {field('Telefon', applicant.phone)}
