@@ -237,21 +237,21 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
                 {replyOpen && (
                   <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 min-w-[240px]">
                     <a
-                      href={`mailto:${data.email}?subject=${encodeURIComponent('Vaše práce u Taros Personal')}&body=${encodeURIComponent(`Dobrý den, ${data.first_name},\n\nděkujeme za Váš zájem o práci u Taros Personal.\n\nRádi bychom Vás pozvali na osobní pohovor. Prosím, kontaktujte nás pro dohodnutí termínu.\n\nS pozdravem,\nTaros Personal`)}`}
+                      href={`mailto:${data.email}?subject=${encodeURIComponent('Vaše práce u Taros Personal')}&body=${encodeURIComponent(`Dobrý den,\nděkujeme za Váš zájem o práci u Taros Personal.\n\nRádi bych Vás pozval na osobní pohovor. Prosím, kontaktujte mne pro dohodnutí termínu.\n\nS pozdravem,\nTaros Personal`)}`}
                       onClick={() => setReplyOpen(false)}
                       className="block px-4 py-2.5 text-xs text-gray-700 hover:bg-gray-50 rounded-t-xl"
                     >
                       📅 {lang === 'de' ? 'Einladung zum Vorstellungsgespräch' : 'Pozvání na pohovor'}
                     </a>
                     <a
-                      href={`mailto:${data.email}?subject=${encodeURIComponent('Vaše práce u Taros Personal – doplnění informací')}&body=${encodeURIComponent(`Dobrý den, ${data.first_name},\n\nděkujeme za vyplnění dotazníku.\n\nPro zpracování Vaší žádosti potřebujeme doplnit několik informací:\n\n- \n- \n\nS pozdravem,\nTaros Personal`)}`}
+                      href={`mailto:${data.email}?subject=${encodeURIComponent('Vaše práce u Taros Personal – doplnění informací')}&body=${encodeURIComponent(`Dobrý den,\nděkujeme za vyplnění dotazníku.\n\nPro zpracování Vaší žádosti potřebujeme doplnit několik informací:\n\n- \n- \n\nS pozdravem,\nTaros Personal`)}`}
                       onClick={() => setReplyOpen(false)}
                       className="block px-4 py-2.5 text-xs text-gray-700 hover:bg-gray-50 border-t border-gray-100"
                     >
                       📋 {lang === 'de' ? 'Bitte um Ergänzung' : 'Žádost o doplnění'}
                     </a>
                     <a
-                      href={`mailto:${data.email}?subject=${encodeURIComponent('Vaše práce u Taros Personal')}&body=${encodeURIComponent(`Dobrý den, ${data.first_name},\n\nděkujeme za Váš zájem o práci prostřednictvím Taros Personal.\n\nBohužel momentálně nemáme pracovní nabídku, která by odpovídala Vašemu profilu. Jakmile se situace změní, budeme Vás kontaktovat.\n\nS pozdravem,\nTaros Personal`)}`}
+                      href={`mailto:${data.email}?subject=${encodeURIComponent('Vaše práce u Taros Personal')}&body=${encodeURIComponent(`Dobrý den,\nděkujeme za Váš zájem o práci prostřednictvím Taros Personal.\n\nBohužel momentálně nemáme pracovní nabídku, která by odpovídala Vašemu profilu. Jakmile se situace změní, budeme Vás kontaktovat.\n\nSledujte naší aktuální nabídku na www.taros-personal.cz nebo na mém osobním profilu na Facebooku:\nhttps://www.facebook.com/profile.php?id=100079180028963\n\nS pozdravem,\nTaros Personal`)}`}
                       onClick={() => setReplyOpen(false)}
                       className="block px-4 py-2.5 text-xs text-gray-700 hover:bg-gray-50 border-t border-gray-100 rounded-b-xl"
                     >
