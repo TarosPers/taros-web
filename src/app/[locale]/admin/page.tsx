@@ -129,17 +129,21 @@ export default async function AdminDashboard() {
         </div>
         <div className="rounded-xl border border-gray-100 bg-white px-5 py-4">
           <div className="text-xs text-gray-400 mb-1">Dotazníky k vyřízení</div>
-          <div className="text-3xl font-bold" style={{ color: (questionnaires?.length ?? 0) > 0 ? '#e07b0a' : '#9ca3af' }}>
-            {questionnaires?.length ?? 0}
+          <div className="text-2xl font-bold mt-1" style={{ color: (questionnaires?.length ?? 0) > 0 ? '#e07b0a' : '#9ca3af' }}>
+            Celkem: {questionnaires?.length ?? 0}
           </div>
-          <div className="text-xs text-gray-300 mt-1">celkem {totalQuestionnaires ?? 0}</div>
+          <div className="text-2xl font-bold mt-1" style={{ color: newQ.length > 0 ? '#2a7a2a' : '#9ca3af' }}>
+            Nové: {newQ.length}
+          </div>
         </div>
         <div className="rounded-xl border border-gray-100 bg-white px-5 py-4">
           <div className="text-xs text-gray-400 mb-1">Přihlášky k vyřízení</div>
-          <div className="text-3xl font-bold" style={{ color: (applicants?.length ?? 0) > 0 ? '#e07b0a' : '#9ca3af' }}>
-            {applicants?.length ?? 0}
+          <div className="text-2xl font-bold mt-1" style={{ color: (applicants?.length ?? 0) > 0 ? '#e07b0a' : '#9ca3af' }}>
+            Celkem: {applicants?.length ?? 0}
           </div>
-          <div className="text-xs text-gray-300 mt-1">celkem {totalApplicants ?? 0}</div>
+          <div className="text-2xl font-bold mt-1" style={{ color: newA.length > 0 ? '#2a7a2a' : '#9ca3af' }}>
+            Nové: {newA.length}
+          </div>
         </div>
       </div>
 
