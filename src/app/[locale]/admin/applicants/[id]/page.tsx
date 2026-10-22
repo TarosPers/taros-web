@@ -178,7 +178,7 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
             <h2 className="text-sm font-medium" style={{ color: '#1a1a1a' }}>{tr.contact}</h2>
             {applicant.email && (
               <a
-                href={`mailto:${applicant.email}?subject=${encodeURIComponent('Vaše práce u Taros Personal – doplnění informací')}&body=${encodeURIComponent(`Dobrý den,\n\nevidence zájem o pracovní pozici ${job ? (lang === 'de' ? job.title_de : job.title_cs) : '...'}\n\nPracovní pozice je stále aktuální, pro rychlejší a bezproblémové vyřízení žádosti prosím vyplňte následující dotazník.\nJako přílohu je vhodné přiložit i profilovou fotografii – profil pak působí lépe. Můžete také přiložit životopis.\nwww.taros-personal.cz/dotaznik\n\nPo zaslání žádost zpracujeme a budeme Vás informovat o dalších krocích.`)}`}
+                href={`mailto:${applicant.email}?subject=${encodeURIComponent('Vaše práce u Taros Personal – doplnění informací')}&body=${encodeURIComponent(`Dobrý den,\n\nevidence zájem o pracovní pozici ${job ? `${lang === 'de' ? job.title_de : job.title_cs}${job.location ? ` / ${job.location}` : ''}` : '...'}\n\nPracovní pozice je stále aktuální, pro rychlejší a bezproblémové vyřízení žádosti prosím vyplňte následující dotazník.\nJako přílohu je vhodné přiložit i profilovou fotografii – profil pak působí lépe. Můžete také přiložit životopis.\nwww.taros-personal.cz/dotaznik\n\nPo zaslání žádost zpracujeme a budeme Vás informovat o dalších krocích.`)}`}
                 className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors"
                 style={{ borderColor: '#e07b0a', color: '#e07b0a', textDecoration: 'none' }}
               >
