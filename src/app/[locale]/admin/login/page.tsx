@@ -62,7 +62,7 @@ export default function AdminLoginPage() {
       // Po přihlášení nastavíme jazyk podle user metadata
       const userLang = data.user?.user_metadata?.lang ?? 'cs'
       setLang(userLang as 'cs' | 'de')
-      router.push('/admin/jobs')
+      router.push('/admin')
     }
   }
 
