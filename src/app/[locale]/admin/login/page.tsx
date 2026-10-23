@@ -38,7 +38,6 @@ export default function AdminLoginPage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Po přihlášení zjistíme jazyk z user metadata
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user?.user_metadata?.lang) {
         setLang(user.user_metadata.lang as 'cs' | 'de')
@@ -59,10 +58,10 @@ export default function AdminLoginPage() {
       setError(tr.error)
       setLoading(false)
     } else {
-      // Po přihlášení nastavíme jazyk podle user metadata
       const userLang = data.user?.user_metadata?.lang ?? 'cs'
       setLang(userLang as 'cs' | 'de')
       router.push('/admin')
+      router.refresh()
     }
   }
 
