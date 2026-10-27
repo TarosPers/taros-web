@@ -68,7 +68,6 @@ export default function GenerateProfilePage({ params }: { params: { id: string }
   useEffect(() => {
     supabase.from('questionnaires').select('*').eq('id', params.id).single().then(({ data: q }) => {
       if (q) {
-        // Pokud existuje uložený draft, použij ho
         if (q.profile_draft) {
           setForm({ ...emptyForm, ...q.profile_draft })
         } else {
@@ -239,6 +238,14 @@ export default function GenerateProfilePage({ params }: { params: { id: string }
             className="px-6 py-2.5 rounded-lg text-sm font-medium text-white disabled:opacity-60"
             style={{ background: '#2a4f2d' }}>
             {generating ? 'Generuji...' : 'Stáhnout dokument'}
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-6 py-2.5 rounded-lg text-sm border font-medium disabled:opacity-60"
+            style={{ borderColor: '#2a4f2d', color: '#2a4f2d' }}
+          >
+            {saved ? '✓ Uloženo' : saving ? 'Ukládám...' : 'Uložit'}
           </button>
           <button onClick={() => router.back()} className="px-6 py-2.5 rounded-lg text-sm border border-gray-200 text-gray-500 hover:bg-gray-50">
             Zrušit
