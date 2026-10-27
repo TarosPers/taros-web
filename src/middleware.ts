@@ -31,6 +31,31 @@ async function findRedirect(pathname: string): Promise<string | null> {
   }
 }
 
+async function isJobActive(slug: string): Promise<boolean> {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (!supabaseUrl || !anonKey) return true
+
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/jobs?slug=eq.${encodeURIComponent(slug)}&select=active&limit=1`,
+      {
+        headers: {
+          apikey: anonKey,
+          Authorization: `Bearer ${anonKey}`,
+        },
+        next: { revalidate: 60 },
+      }
+    )
+    if (!res.ok) return true
+    const rows = await res.json()
+    if (!rows?.[0]) return true
+    return rows[0].active === true
+  } catch {
+    return true
+  }
+}
+
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
   const hostname = req.headers.get('host') ?? ''
@@ -38,6 +63,16 @@ export default async function middleware(req: NextRequest) {
   const target = await findRedirect(pathname)
   if (target) {
     return NextResponse.redirect(new URL(target, req.url), 301)
+  }
+
+  // Přesměrování neaktivních/skrytých inzerátů na homepage
+  const jobMatch = pathname.match(/^\/(?:cs|de)\/jobs\/([^/]+)$/)
+  if (jobMatch) {
+    const slug = jobMatch[1]
+    const active = await isJobActive(slug)
+    if (!active) {
+      return NextResponse.redirect(new URL('https://www.taros-personal.cz', req.url), 302)
+    }
   }
 
   if (hostname.startsWith('app.')) {
@@ -50,12 +85,10 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.rewrite(url)
   }
 
-  // /cs/admin a /de/admin — přeskočit intl middleware aby nedošlo k redirect loop
   if (pathname.startsWith('/cs/admin') || pathname.startsWith('/de/admin')) {
     return NextResponse.next()
   }
 
-  // /admin bez locale — redirect na /cs/admin
   if (pathname === '/admin' || pathname.startsWith('/admin/')) {
     const url = req.nextUrl.clone()
     url.pathname = `/cs${pathname}`
