@@ -66,7 +66,7 @@ export default async function middleware(req: NextRequest) {
   }
 
   // Přesměrování neaktivních/skrytých inzerátů na homepage
-  const jobMatch = pathname.match(/^\/(?:cs|de)\/jobs\/([^/]+)$/)
+  const jobMatch = pathname.match(/^\/(?:(?:cs|de)\/)?jobs\/([^/]+)$/)
   if (jobMatch) {
     const slug = jobMatch[1]
     const active = await isJobActive(slug)
