@@ -29,6 +29,10 @@ const t = {
     education: 'Vzdělání',
     experience: 'Pracovní zkušenosti',
     message: 'Zpráva',
+    attachments: 'Přílohy z dotazníku',
+    attachmentsFoto: '📷 Fotografie — přiložena spolu s dotazníkem',
+    attachmentsCV: '📄 Životopis (CV) — přiložen spolu s dotazníkem',
+    attachmentsNote: 'Soubory byly odeslány e-mailem na administrátory.',
     statuses: {
       new: 'Nový', reviewing: 'Probíhá', invited: 'Pozván', rejected: 'Zamítnut', hired: 'Přijat', withdrew: 'Odstoupil',
     },
@@ -61,6 +65,10 @@ const t = {
     education: 'Bildung',
     experience: 'Berufserfahrung',
     message: 'Nachricht',
+    attachments: 'Anhänge aus dem Fragebogen',
+    attachmentsFoto: '📷 Foto — mit dem Fragebogen eingereicht',
+    attachmentsCV: '📄 Lebenslauf (CV) — mit dem Fragebogen eingereicht',
+    attachmentsNote: 'Dateien wurden per E-Mail an die Administratoren gesendet.',
     statuses: {
       new: 'Neu', reviewing: 'In Bearbeitung', invited: 'Eingeladen', rejected: 'Abgelehnt', hired: 'Eingestellt', withdrew: 'Zurückgezogen',
     },
@@ -210,6 +218,25 @@ export default function QuestionnaireDetailPage({ params }: { params: { id: stri
             {saving ? tr.saving : tr.save}
           </button>
         </div>
+
+        {(data.has_foto || data.has_cv) && (
+          <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <h2 className="text-sm font-medium mb-3" style={{ color: '#1a1a1a' }}>{tr.attachments}</h2>
+            <div className="flex flex-col gap-2">
+              {data.has_foto && (
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <span>{tr.attachmentsFoto}</span>
+                </div>
+              )}
+              {data.has_cv && (
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <span>{tr.attachmentsCV}</span>
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-gray-400 mt-2">{tr.attachmentsNote}</p>
+          </div>
+        )}
 
         <div className="bg-white rounded-xl border border-gray-100 p-6">
           <h2 className="text-sm font-medium mb-4" style={{ color: '#1a1a1a' }}>{tr.personal}</h2>
