@@ -20,7 +20,6 @@ async function findRedirect(pathname: string): Promise<string | null> {
           apikey: anonKey,
           Authorization: `Bearer ${anonKey}`,
         },
-        next: { revalidate: 60 },
       }
     )
     if (!res.ok) return null
@@ -44,7 +43,6 @@ async function isJobActive(slug: string): Promise<boolean> {
           apikey: anonKey,
           Authorization: `Bearer ${anonKey}`,
         },
-        next: { revalidate: 60 },
       }
     )
     if (!res.ok) return true
