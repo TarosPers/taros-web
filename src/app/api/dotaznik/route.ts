@@ -168,7 +168,6 @@ export async function POST(req: NextRequest) {
       if (value instanceof File) {
         files[key] = value
       } else if (key === 'profese_list') {
-        // Nový dvouúrovňový selektor — každá pozice jako samostatná hodnota
         profeseList.push(value as string)
       } else {
         if (data[key]) {
@@ -193,12 +192,11 @@ export async function POST(req: NextRequest) {
       attachments.push({ filename: `cv-${data.firstName}-${data.lastName}.${ext}`, content: buffer })
     }
 
-    // Pro zpětnou kompatibilitu (Google Sheets, emaily) — join do stringu
     const profese = profeseList.length > 0
       ? profeseList.join(', ')
       : (Array.isArray(data.profese) ? data.profese.join(', ') : (data.profese ?? ''))
 
-    // 1. Uložit do Supabase — kritické, musí projít
+    // 1. Uložit do Supabase
     const { error: dbError } = await supabase.from('questionnaires').insert({
       first_name: data.firstName,
       last_name: data.lastName,
@@ -210,8 +208,8 @@ export async function POST(req: NextRequest) {
       birth_date: data.birthDate,
       nationality: data.nationality,
       marital_status: data.maritalStatus,
-      profese,                          // starý string sloupec — zachován pro kompatibilitu
-      profese_list: profeseList,        // nový text[] sloupec
+      profese,
+      profese_list: profeseList,
       profese_jina: data.profeseJina,
       start_date: data.startDate,
       german: data.german,
@@ -227,6 +225,8 @@ export async function POST(req: NextRequest) {
       job3: data.job3,
       message: data.message,
       status: 'new',
+      has_foto: files.foto ? files.foto.size > 0 : false,
+      has_cv: files.cv ? files.cv.size > 0 : false,
     })
 
     if (dbError) {
@@ -234,10 +234,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Database error' }, { status: 500 })
     }
 
-    // 2. Google Sheets — nekritické, chyby se logují ale neblokují
+    // 2. Google Sheets
     await appendToSheet(data, profese)
 
-    // Popisky u admin e-mailu jsou dvojjazyčné (CS / DE) – příjemci jsou i němečtí kolegové
     const YES_NO: Record<string, string> = {
       ano: 'ano / ja',
       ne: 'ne / nein',
@@ -303,7 +302,7 @@ export async function POST(req: NextRequest) {
       ${attachments.length > 0 ? `<p style="color:#999;font-size:11px;margin-top:12px;">📎 Přílohy / Anhänge: ${attachments.map(a => a.filename).join(', ')}</p>` : ''}
     `)
 
-    // 3. Email na adminy + Make hook — nekritické, ale logujeme
+    // 3. Email na adminy
     try {
       await resend.emails.send({
         from: FROM_EMAIL,
@@ -316,7 +315,7 @@ export async function POST(req: NextRequest) {
       console.error('Admin email error:', emailErr)
     }
 
-    // 4. Potvrzovací email uchazeči — nekritické, neblokuje submit
+    // 4. Potvrzovací email uchazeči
     try {
       await resend.emails.send({
         from: FROM_EMAIL,
