@@ -31,6 +31,8 @@ const itemCard = (
   date: string,
   status: string,
   hasNotes: boolean,
+  hasFoto?: boolean,
+  hasCv?: boolean,
   profileHref?: string,
   profileLabel?: string
 ) => (
@@ -42,6 +44,8 @@ const itemCard = (
       <div className="flex items-center gap-1.5">
         <Link href={href} className="text-sm font-medium hover:underline" style={{ color: '#1a1a1a', textDecoration: 'none' }}>{title}</Link>
         {hasNotes && <span title="Obsahuje poznámky" className="text-sm leading-none">📝</span>}
+        {hasFoto && <span title="Přiložena fotografie" className="text-sm leading-none">📷</span>}
+        {hasCv && <span title="Přiložen životopis" className="text-sm leading-none">📄</span>}
       </div>
       {subtitle && <div className="text-xs text-gray-400 mt-0.5">{subtitle}</div>}
       {profileHref && (
@@ -60,7 +64,7 @@ const itemCard = (
 export default async function AdminDashboard() {
   const { data: questionnaires } = await supabase
     .from('questionnaires')
-    .select('id, first_name, last_name, email, profese, created_at, status, notes')
+    .select('id, first_name, last_name, email, profese, created_at, status, notes, has_foto, has_cv')
     .in('status', ['new', 'reviewing', 'invited'])
     .order('created_at', { ascending: false })
 
@@ -83,7 +87,6 @@ export default async function AdminDashboard() {
     .from('applicants')
     .select('id', { count: 'exact', head: true })
 
-  // Pro přihlášky: mapa email → nejnovější questionnaire id
   const applicantEmails = [...new Set((applicants ?? []).map(a => a.email).filter(Boolean))]
   let emailToQId: Record<string, string> = {}
   if (applicantEmails.length > 0) {
@@ -97,7 +100,6 @@ export default async function AdminDashboard() {
     }
   }
 
-  // Pro dotazníky: mapa email → počet přihlášek
   const qEmails = [...new Set((questionnaires ?? []).map(q => q.email).filter(Boolean))]
   let emailToAppCount: Record<string, number> = {}
   if (qEmails.length > 0) {
@@ -173,7 +175,9 @@ export default async function AdminDashboard() {
                   subtitle || null,
                   formatDate(q.created_at),
                   q.status,
-                  !!q.notes
+                  !!q.notes,
+                  !!q.has_foto,
+                  !!q.has_cv
                 )
               })}
               {inProgressQ.length > 0 && (
@@ -187,7 +191,9 @@ export default async function AdminDashboard() {
                       subtitle || null,
                       formatDate(q.created_at),
                       q.status,
-                      !!q.notes
+                      !!q.notes,
+                      !!q.has_foto,
+                      !!q.has_cv
                     )
                   })}
                 </CollapsibleSection>
@@ -216,6 +222,8 @@ export default async function AdminDashboard() {
                 formatDate(a.created_at),
                 a.status,
                 !!a.notes,
+                false,
+                false,
                 emailToQId[a.email] ? `/admin/questionnaires/${emailToQId[a.email]}` : undefined,
                 'Dotazník'
               ))}
@@ -228,6 +236,8 @@ export default async function AdminDashboard() {
                     formatDate(a.created_at),
                     a.status,
                     !!a.notes,
+                    false,
+                    false,
                     emailToQId[a.email] ? `/admin/questionnaires/${emailToQId[a.email]}` : undefined,
                     'Dotazník'
                   ))}
